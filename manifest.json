@@ -1,0 +1,14 @@
+{
+  "name": "Mis Autos",
+  "short_name": "Mis Autos",
+  "description": "Vencimientos (seguro, RTO, matafuego), escaneos y trabajos de mis autos",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#eef1f8",
+  "theme_color": "#1e2340",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
