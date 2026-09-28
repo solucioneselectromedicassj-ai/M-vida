@@ -570,14 +570,16 @@ function fVenc(id,k,renov){
   const a=autoById(id),t=VTIPOS.find(x=>x.k===k),v=(a.venc||{})[k]||{};
   const sug=renov&&v.fecha?(t.renov?sumarMeses(v.fecha,t.renov):''):v.fecha;
   const av=avisoDe(v,t);
+  const forzarArchivo=!!(renov&&v.archivo); // al renovar, si ya tenía un adjunto, pedimos el nuevo (ej: PDF de la póliza cada 2 meses)
   modal(t.ico+' '+t.n+' · '+esc(a.nombre),'venc',hid('id',id)+hid('k',k)+
     inp('fecha','Fecha de vencimiento *',sug,'type="date" required')+
     (renov?'<div class="hint" style="margin:-6px 0 12px">'+(t.renov?'Te propongo +'+t.renov+' meses; cambiala si no es así.':'Cargá la nueva fecha de vencimiento.')+'</div>':'')+
     inp('aviso','Avisar con cuántos días de anticipación',av,'type="number" min="1" max="365" required')+
     t.extra.map(([ek,n])=>inp(ek,n,v[ek])).join('')+
     '<hr class="fdiv">'+
-    (v.archivo?'<div class="hint">Adjunto actual: '+esc(v.archivo.nombre)+' <button type="button" class="btn bs sm" data-act="ver-archivo" data-id="'+a.id+'" data-k="'+k+'" style="margin-left:6px">👁 Ver</button></div><label class="chk"><input type="checkbox" name="quitarArchivo" value="1"> <span>Quitar el archivo adjunto</span></label>':'')+
-    '<div class="fg"><label class="fl">'+(v.archivo?'Reemplazar archivo (foto o PDF)':'Adjuntar archivo (foto o PDF, opcional)')+'</label><input class="fi" type="file" name="archivo" accept="image/*,application/pdf"></div>'+
+    (v.archivo?'<div class="hint">Adjunto actual: '+esc(v.archivo.nombre)+' <button type="button" class="btn bs sm" data-act="ver-archivo" data-id="'+a.id+'" data-k="'+k+'" style="margin-left:6px">👁 Ver</button></div>'+(forzarArchivo?'':'<label class="chk"><input type="checkbox" name="quitarArchivo" value="1"> <span>Quitar el archivo adjunto</span></label>'):'')+
+    (forzarArchivo?'<div class="hint" style="color:var(--red);font-weight:700">📎 Subí el PDF o foto nuevo — se renueva cada '+(t.renov||'unos')+' meses, no sirve dejar el anterior.</div>':'')+
+    '<div class="fg"><label class="fl">'+(v.archivo?'Reemplazar archivo (foto o PDF)':'Adjuntar archivo (foto o PDF, opcional)')+'</label><input class="fi" type="file" name="archivo" accept="image/*,application/pdf"'+(forzarArchivo?' required':'')+'></div>'+
     '<div class="hint">Se guarda en la nube: lo va a ver también quien más use la app.</div>'+
     txta('notas','Notas',v.notas,'txt')+okBtn());
 }
