@@ -108,8 +108,14 @@ async function load(){
   try{
     let{data,error}=await sb.from('misautos_data').select('data').eq('id','home').maybeSingle();
     if(error)throw error;
+    const vacio=d=>!d||(!(d.autos&&d.autos.length)&&!(d.licencias&&d.licencias.length));
     if(!data){await sb.from('misautos_data').insert({id:'home',data:D});}
-    else{D={...D,...data.data};if(!Array.isArray(D.licencias))D.licencias=[];D.ajustes={aviso:30,...(D.ajustes||{})};cacheLocal();}
+    else if(vacio(data.data)&&!vacio(D)){
+      // La nube está vacía pero este celular ya tiene datos cargados (ej: primera vez que
+      // sincroniza este teléfono): subimos lo local en vez de perderlo con lo vacío de la nube.
+      await sb.from('misautos_data').update({data:D,updated_at:new Date().toISOString()}).eq('id','home');
+      toast('☁️ Subiendo tus datos a la nube por primera vez…',3200);
+    }else{D={...D,...data.data};if(!Array.isArray(D.licencias))D.licencias=[];D.ajustes={aviso:30,...(D.ajustes||{})};cacheLocal();}
     nubeOK=true;cargando=false;setSyncSt('☁️ al día','var(--green)');
     suscribirNube();
   }catch(e){
