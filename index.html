@@ -146,13 +146,15 @@ P2002:'Filtro de partículas (DPF): eficiencia baja',P2135:'TPS: correlación se
 C0035:'Sensor velocidad rueda delantera izquierda',C0040:'Sensor velocidad rueda delantera derecha',C0045:'Sensor velocidad rueda trasera izquierda',C0050:'Sensor velocidad rueda trasera derecha',
 U0100:'Sin comunicación con la ECU del motor',U0101:'Sin comunicación con el módulo de la caja',U0121:'Sin comunicación con el módulo ABS',U0140:'Sin comunicación con el módulo de carrocería (BCM)',U0155:'Sin comunicación con el tablero',
 };
-const RX=/^[PBCU][0-9A-F]{4}$/;
+const RX=/\b[PBCU][0-9A-F]{4}\b/g;
 function descCod(c){
   if(DTC[c])return DTC[c];
   const tipo={P:'Motor / transmisión',B:'Carrocería',C:'Chasis',U:'Comunicación / red'}[c[0]]||'';
   return tipo+(c[1]==='0'?' · código genérico':' · código propio de la marca');
 }
-function parseCods(txt){const all=[...new Set(String(txt||'').toUpperCase().split(/[\s,;\/]+/).filter(Boolean))];return{ok:all.filter(c=>RX.test(c)),mal:all.filter(c=>!RX.test(c))};}
+// Busca códigos de falla (P0301, etc.) donde sea que aparezcan en el texto — sirve tanto para
+// tipearlos sueltos como para pegar la respuesta completa de Gemini/otra IA con frases alrededor.
+function parseCods(txt){const ok=[...new Set(String(txt||'').toUpperCase().match(RX)||[])];return{ok};}
 const gLink=c=>'https://www.google.com/search?q='+encodeURIComponent(c+' código falla significado');
 
 /* ───────── Lógica de escaneos y trabajos ───────── */
@@ -338,18 +340,17 @@ function fEsc(id,sid){
   modal(sid?'✏️ Editar escaneo':'🩺 Nuevo escaneo','esc',hid('id',id)+hid('sid',sid)+
     '<div class="frow">'+inp('fecha','Fecha *',s.fecha,'type="date" required')+inp('km','Km',s.km,'type="number" inputmode="numeric"')+'</div>'+
     '<div class="fg"><label class="fl">Hecho con</label><select class="fi" name="herr">'+herrs.map(x=>'<option'+(x===s.herr?' selected':'')+'>'+x+'</option>').join('')+'</select></div>'+
-    txta('codigos','Códigos de falla',s.codigos.join(' '),'','Ej: P0301 P0420  (vacío = escaneo limpio)')+
-    '<div class="hint">Separalos con espacio o coma. Si no dio ningún código, dejalo vacío.</div><div id="prev"></div>'+
+    txta('codigos','Códigos de falla',s.codigos.join(' '),'','Ej: P0301 P0420 — o pegá acá la respuesta completa de Gemini')+
+    '<div class="hint">Escribilos sueltos o pegá el texto que te dio Gemini (u otra IA) al analizar la foto del escáner: la app busca los códigos ahí adentro y ignora el resto. Si no dio ningún código, dejalo vacío.</div><div id="prev"></div>'+
     txta('notas','Notas',s.notas,'txt','Ej: check engine prendido, tironea en frío…')+okBtn());
   prevCods();
 }
 function prevCods(){
   const f=document.querySelector('form[data-form="esc"]');if(!f)return;
-  const a=autoById(f.id.value),{ok,mal}=parseCods(f.codigos.value);
+  const a=autoById(f.id.value),{ok}=parseCods(f.codigos.value);
   const ord=escOrd(a).filter(x=>x.id!==f.sid.value&&(x.fecha<f.fecha.value||(x.fecha===f.fecha.value&&!f.sid.value)));
   const prev=ord[ord.length-1],pc=prev?prev.codigos:[];
   let h='';
-  if(mal.length)h+='<div class="al-s" style="color:var(--red);font-weight:700">⚠️ No reconozco: '+esc(mal.join(', '))+' (formato P0123)</div>';
   if(ok.length){
     h+=ok.map(c=>{const n=prev&&!pc.includes(c);return '<div class="code"><b>'+c+'</b><span class="d">'+esc(descCod(c))+'</span><span class="chip '+(!prev?'c-o':n?'c-r':'c-o')+'" style="font-size:11px">'+(!prev?'activo':n?'NUEVO':'sigue')+'</span></div>';}).join('');
   }
@@ -367,7 +368,7 @@ function fTrab(id,tid){
     '<div class="frow">'+inp('taller','Taller',t.taller)+inp('costo','Costo ($)',t.costo,'type="number" inputmode="decimal"')+'</div>'+
     '<div class="fg"><label class="fl">¿Busca borrar algún código?</label>'+
     (opc.length?opc.map(c=>'<label class="chk"><input type="checkbox" name="cod" value="'+c+'"'+((t.codigos||[]).includes(c)?' checked':'')+'> <b style="font-family:monospace">'+c+'</b> <span class="meta">'+esc(descCod(c))+'</span></label>').join(''):'<div class="hint">El último escaneo no tiene códigos activos.</div>')+
-    '<input class="fi" name="codextra" placeholder="Otro código (opcional)" style="margin-top:6px;text-transform:uppercase"></div>'+
+    '<input class="fi" name="codextra" placeholder="Otro código, o pegá texto de Gemini (opcional)" style="margin-top:6px"></div>'+
     txta('notas','Notas',t.notas,'txt')+okBtn());
 }
 function fAjustes(){
@@ -403,8 +404,7 @@ const FORMS={
     a.venc[f.k]=v;return t.n+' guardado';
   },
   esc(f){
-    const a=autoById(f.id),{ok,mal}=parseCods(f.codigos);
-    if(mal.length&&!confirm('Estos códigos no tienen el formato habitual y no se van a guardar:\n'+mal.join(', ')+'\n\n¿Guardar igual?'))return false;
+    const a=autoById(f.id),{ok}=parseCods(f.codigos);
     a.escaneos=a.escaneos||[];
     const d={fecha:f.fecha,km:num(f.km),herr:f.herr,codigos:ok,notas:f.notas.trim()};
     if(f.sid)Object.assign(a.escaneos.find(x=>x.id===f.sid),d);
