@@ -8,6 +8,7 @@
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon.svg">
 <title>Mis Autos</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
 :root{
   --bg:#eef1f8;--card:#fff;--card2:#f4f6fc;--border:#dde2ef;--text:#1e2340;--muted:#6f7794;
@@ -78,21 +79,68 @@ textarea.fi.txt{font-family:inherit;text-transform:none;min-height:56px}
 <body>
 <header class="hdr">
   <div class="logo">🚗 Mis <b>Autos</b></div>
-  <button class="ibtn" data-act="ajustes" aria-label="Ajustes">⚙️</button>
+  <div style="display:flex;align-items:center;gap:8px">
+    <span id="syncst" style="font-size:11px;color:var(--muted)" title="Estado de sincronización">·</span>
+    <button class="ibtn" data-act="ajustes" aria-label="Ajustes">⚙️</button>
+  </div>
 </header>
 <main id="app"></main>
 <div id="modal"></div>
 <div class="toast" id="toast"></div>
 <script>
 'use strict';
-/* ───────── Datos ───────── */
+/* ───────── Datos — compartidos entre celulares vía Supabase, con caché local ───────── */
 const SK='misautos_v1';
-let D={autos:[],ajustes:{aviso:30},ultNotif:'',licencia:{}};
+const SUPA_URL='https://drfyicdwwltzzahqixlz.supabase.co';
+const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRyZnlpY2R3d2x0enphaHFpeGx6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkzMjgzMDEsImV4cCI6MjA5NDkwNDMwMX0.Ar9pc4OAI09mb4Mu96wlSyimNNuLS54NZ-eqsh80pOU';
+const sb=(typeof supabase!=='undefined')?supabase.createClient(SUPA_URL,SUPA_KEY):null;
+let D={autos:[],ajustes:{aviso:30},ultNotif:'',licencias:[]};
 let V={auto:null,tab:'venc'};
-let storageOK=true;
+let storageOK=true,nubeOK=false,cargando=true;
 
-function load(){try{const s=localStorage.getItem(SK);if(s)D={...D,...JSON.parse(s)};}catch(e){storageOK=false;}D.ajustes={aviso:30,...(D.ajustes||{})};}
-function save(){try{localStorage.setItem(SK,JSON.stringify(D));}catch(e){storageOK=false;toast('⚠️ No se pudo guardar. Exportá un backup.',4000);}}
+function setSyncSt(txt,color){const el=$('#syncst');if(el){el.textContent=txt;el.style.color=color||'var(--muted)';}}
+function cacheLocal(){try{localStorage.setItem(SK,JSON.stringify(D));}catch(e){storageOK=false;}}
+function loadCacheLocal(){try{const s=localStorage.getItem(SK);if(s)D={...D,...JSON.parse(s)};}catch(e){storageOK=false;}D.ajustes={aviso:30,...(D.ajustes||{})};if(!Array.isArray(D.licencias))D.licencias=[];}
+async function load(){
+  loadCacheLocal(); // se ve algo de inmediato mientras llega lo de la nube
+  if(!sb){setSyncSt('⚠️ sin nube','var(--red)');render();return;}
+  setSyncSt('… sincronizando');
+  try{
+    let{data,error}=await sb.from('misautos_data').select('data').eq('id','home').maybeSingle();
+    if(error)throw error;
+    if(!data){await sb.from('misautos_data').insert({id:'home',data:D});}
+    else{D={...D,...data.data};if(!Array.isArray(D.licencias))D.licencias=[];D.ajustes={aviso:30,...(D.ajustes||{})};cacheLocal();}
+    nubeOK=true;cargando=false;setSyncSt('☁️ al día','var(--green)');
+    suscribirNube();
+  }catch(e){
+    nubeOK=false;cargando=false;
+    setSyncSt('⚠️ sin conexión','var(--red)');
+    toast('⚠️ No hay conexión: mostrando lo último guardado en este celular',3500);
+  }
+  render();
+}
+function suscribirNube(){
+  if(!sb||suscribirNube._on)return;suscribirNube._on=true;
+  sb.channel('misautos_data_changes').on('postgres_changes',{event:'UPDATE',schema:'public',table:'misautos_data',filter:'id=eq.home'},payload=>{
+    const nuevo={...payload.new.data};if(!Array.isArray(nuevo.licencias))nuevo.licencias=[];nuevo.ajustes={aviso:30,...(nuevo.ajustes||{})};
+    D=nuevo;cacheLocal();
+    if($('#modal').innerHTML.trim())toast('El otro celular actualizó datos — se van a ver al cerrar esto',3000);
+    else render();
+  }).subscribe(status=>{if(status==='SUBSCRIBED')setSyncSt('☁️ al día','var(--green)');});
+}
+async function save(){
+  cacheLocal();
+  if(!sb){setSyncSt('⚠️ sin nube','var(--red)');toast('⚠️ Guardado solo en este celular (sin conexión a la nube)',3500);return;}
+  setSyncSt('… guardando');
+  try{
+    const{error}=await sb.from('misautos_data').update({data:D,updated_at:new Date().toISOString()}).eq('id','home');
+    if(error)throw error;
+    nubeOK=true;setSyncSt('☁️ al día','var(--green)');
+  }catch(e){
+    nubeOK=false;setSyncSt('⚠️ no se guardó en la nube','var(--red)');
+    toast('⚠️ Se guardó solo en este celular. Revisá tu conexión y volvé a intentar.',4000);
+  }
+}
 
 // avisoDef: días de anticipación sugeridos por defecto (editable por vencimiento cargado).
 const VTIPOS=[
@@ -130,56 +178,27 @@ const nombreAuto=a=>a.nombre+(a.patente?' ('+a.patente+')':'');
 let tT;function toast(m,ms){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(tT);tT=setTimeout(()=>t.classList.remove('show'),ms||2200);}
 const autoById=id=>D.autos.find(a=>a.id===id);
 
-/* ── Archivos (fotos/PDF de pólizas, cédulas, licencia) — se guardan aparte, en IndexedDB, ──
-   porque no entran en el espacio chico de localStorage. No viajan en el backup JSON. */
-const IDB_NAME='misautos_files',IDB_STORE='archivos';
-function idbOpen(){
-  return new Promise((res,rej)=>{
-    if(!('indexedDB' in window))return rej(new Error('sin indexedDB'));
-    const req=indexedDB.open(IDB_NAME,1);
-    req.onupgradeneeded=()=>{req.result.createObjectStore(IDB_STORE);};
-    req.onsuccess=()=>res(req.result);
-    req.onerror=()=>rej(req.error);
-  });
-}
-async function idbPut(id,blob){
-  const db=await idbOpen();
-  return new Promise((res,rej)=>{
-    const tx=db.transaction(IDB_STORE,'readwrite');
-    tx.objectStore(IDB_STORE).put(blob,id);
-    tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error);
-  });
-}
-async function idbGet(id){
-  const db=await idbOpen();
-  return new Promise((res,rej)=>{
-    const tx=db.transaction(IDB_STORE,'readonly');
-    const req=tx.objectStore(IDB_STORE).get(id);
-    req.onsuccess=()=>res(req.result||null);req.onerror=()=>rej(req.error);
-  });
-}
+/* ── Archivos (fotos/PDF de pólizas, cédulas, licencias) — Supabase Storage, ──
+   compartido: lo que sube un celular lo ve el otro. */
 async function idbDel(id){
-  const db=await idbOpen();
-  return new Promise((res,rej)=>{
-    const tx=db.transaction(IDB_STORE,'readwrite');
-    tx.objectStore(IDB_STORE).delete(id);
-    tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error);
-  });
+  if(!sb||!id)return;
+  try{await sb.storage.from('misautos-files').remove([id]);}catch(e){}
 }
 async function verArchivo(archivo){
   if(!archivo)return;
+  if(!sb){toast('⚠️ Sin conexión a la nube, no se puede abrir ahora',3000);return;}
   try{
-    const blob=await idbGet(archivo.id);
-    if(!blob){toast('⚠️ No se encontró el archivo en este dispositivo',3500);return;}
-    const url=URL.createObjectURL(blob);
-    window.open(url,'_blank');
-    setTimeout(()=>URL.revokeObjectURL(url),60000);
+    const{data,error}=await sb.storage.from('misautos-files').createSignedUrl(archivo.id,300);
+    if(error||!data)throw error||new Error('sin datos');
+    window.open(data.signedUrl,'_blank');
   }catch(e){toast('⚠️ No se pudo abrir el archivo',3000);}
 }
 async function guardarArchivo(oldArchivo,file){
-  if(oldArchivo)await idbDel(oldArchivo.id).catch(()=>{});
-  const id=uid();
-  await idbPut(id,file);
+  if(!sb)throw new Error('sin conexión a la nube');
+  if(oldArchivo)await idbDel(oldArchivo.id);
+  const id=uid()+'-'+file.name.replace(/[^\w.\-]+/g,'_');
+  const{error}=await sb.storage.from('misautos-files').upload(id,file,{upsert:true,contentType:file.type||undefined});
+  if(error)throw error;
   return{id,nombre:file.name,tipo:file.type,tam:file.size};
 }
 
@@ -324,15 +343,15 @@ function estadoM(a,item,m){
 }
 function alertas(){
   const out=[];
-  const lv=D.licencia||{},le=estadoV(lv,avisoDe(lv,{avisoDef:30}));
-  if(le.nivel){
+  (D.licencias||[]).forEach(lv=>{
+    const le=estadoV(lv,avisoDe(lv,{avisoDef:30}));if(!le.nivel)return;
     let sub;
     if(le.d==null)sub='Cargá el vencimiento para que te avise';
     else if(le.d<0)sub='Venció el '+fmt(lv.fecha)+' (hace '+(-le.d)+' días)';
     else if(le.d===0)sub='Vence hoy, '+fmt(lv.fecha);
     else sub='Vence el '+fmt(lv.fecha)+' · faltan '+le.d+' días';
-    out.push({nivel:le.nivel,lic:true,t:'🪪 Licencia de conducir'+(le.d!=null&&le.d<0?' VENCIDA':le.d==null?' sin cargar':''),sub});
-  }
+    out.push({nivel:le.nivel,lic:lv.id,t:'🪪 Licencia de conducir · '+lv.nombre+(le.d!=null&&le.d<0?' VENCIDA':le.d==null?' sin cargar':''),sub});
+  });
   D.autos.forEach(a=>{
     VTIPOS.forEach(t=>{
       const v=(a.venc||{})[t.k]||{},e=estadoV(v,avisoDe(v,t));if(!e.nivel)return;
@@ -375,7 +394,7 @@ function vInicio(){
   if(!D.autos.length){
     const al0=alertas().filter(x=>x.lic);
     h+='<div class="stitle">Avisos</div>';al0.forEach(x=>h+=vAlerta(x));
-    h+='<div class="stitle" style="margin-top:16px">Licencia de conducir</div>'+vLicenciaCard();
+    h+='<div class="stitle" style="margin-top:16px">Licencias de conducir</div>'+vLicencias();
     return h+'<div class="empty"><div class="e">🚗</div><div style="font-weight:800;margin-bottom:4px">Agregá tu primer auto</div>Después cargá el vencimiento del seguro, la RTO y el matafuego, y los escaneos que le hagas.</div><button class="btn bp full" data-act="auto-form">+ Agregar auto</button></div>';
   }
   const al=alertas();
@@ -384,7 +403,7 @@ function vInicio(){
   if(!fuertes.length)h+='<div class="card" style="text-align:center"><div style="font-size:30px">✅</div><div style="font-weight:800">Todo al día</div><div class="meta">Nada vence en los próximos '+D.ajustes.aviso+' días</div></div>';
   fuertes.forEach(x=>h+=vAlerta(x));
   leves.forEach(x=>h+=vAlerta(x));
-  h+='<div class="stitle" style="margin-top:16px">Licencia de conducir</div>'+vLicenciaCard();
+  h+='<div class="stitle" style="margin-top:16px">Licencias de conducir</div>'+vLicencias();
   h+='<div class="stitle" style="margin-top:16px">Mis autos</div>';
   D.autos.forEach(a=>{
     const ord=escOrd(a),ult=ord[ord.length-1];
@@ -398,7 +417,7 @@ function vInicio(){
   return h+'</div><button class="fab" data-act="auto-form" aria-label="Agregar auto">+</button>';
 }
 function vAlerta(x){
-  if(x.lic)return '<div class="al al-'+x.nivel+'" data-act="lic-form"><div class="al-t">'+esc(x.t)+'</div><div class="al-s">'+esc(x.sub)+'</div></div>';
+  if(x.lic)return '<div class="al al-'+x.nivel+'" data-act="lic-form" data-id="'+x.lic+'"><div class="al-t">'+esc(x.t)+'</div><div class="al-s">'+esc(x.sub)+'</div></div>';
   return '<div class="al al-'+x.nivel+'" data-act="abrir" data-id="'+x.a.id+'" data-tab="'+x.tab+'"><div class="al-t">'+esc(x.t)+' · '+esc(x.a.nombre)+'</div><div class="al-s">'+esc(x.sub)+'</div></div>';
 }
 
@@ -439,16 +458,23 @@ function vDocumentos(a){
   h+='<button class="btn bs full" data-act="doc-form" data-id="'+a.id+'">+ Agregar documento</button>';
   return h;
 }
-function vLicenciaCard(){
-  const lv=D.licencia||{},av=avisoDe(lv,{avisoDef:30}),e=estadoV(lv,av);
-  let h='<div class="card"><div class="row"><div class="ttl">🪪 Licencia de conducir</div><span class="chip c-'+e.c+'">'+esc(e.txt)+'</span></div>';
-  h+='<div style="font-size:18px;font-weight:800;margin-top:6px">'+(lv.fecha?'Vence '+fmt(lv.fecha):'<span class="meta">Sin fecha cargada</span>')+'</div>';
-  if(lv.fecha)h+='<div class="meta">Avisa '+av+' día(s) antes</div>';
-  if(lv.archivo)h+='<div class="meta">📎 '+esc(lv.archivo.nombre)+'</div>';
-  if(lv.notas)h+='<div class="meta">📝 '+esc(lv.notas)+'</div>';
-  h+='<div class="acts"><button class="btn '+(lv.fecha?'bs':'bp')+' sm" data-act="lic-form">'+(lv.fecha?'✏️ Editar':'+ Cargar')+'</button>';
-  if(lv.archivo)h+='<button class="btn bs sm" data-act="ver-lic">👁 Ver</button>';
-  h+='</div></div>';
+function vLicencias(){
+  const list=D.licencias||[];
+  let h='';
+  if(!list.length)h+='<div class="empty" style="padding:20px"><div class="e">🪪</div>Sin licencias cargadas.<br>Agregá la tuya y la de tu señora/marido — no dependen de ningún auto en particular.</div>';
+  list.forEach(lv=>{
+    const av=avisoDe(lv,{avisoDef:30}),e=estadoV(lv,av);
+    h+='<div class="card" style="margin-bottom:8px"><div class="row"><div class="ttl">🪪 '+esc(lv.nombre)+'</div><span class="chip c-'+e.c+'">'+esc(e.txt)+'</span></div>';
+    h+='<div style="font-size:18px;font-weight:800;margin-top:6px">'+(lv.fecha?'Vence '+fmt(lv.fecha):'<span class="meta">Sin fecha cargada</span>')+'</div>';
+    if(lv.fecha)h+='<div class="meta">Avisa '+av+' día(s) antes</div>';
+    if(lv.archivo)h+='<div class="meta">📎 '+esc(lv.archivo.nombre)+'</div>';
+    if(lv.notas)h+='<div class="meta">📝 '+esc(lv.notas)+'</div>';
+    h+='<div class="acts"><button class="btn bs sm" data-act="lic-form" data-id="'+lv.id+'">✏️ Editar</button>';
+    if(lv.archivo)h+='<button class="btn bs sm" data-act="ver-lic" data-id="'+lv.id+'">👁 Ver</button>';
+    h+='<button class="btn bd sm" data-act="lic-del" data-id="'+lv.id+'">Eliminar</button>';
+    h+='</div></div>';
+  });
+  h+='<button class="btn bs full" data-act="lic-form">+ Agregar licencia</button>';
   return h;
 }
 function vMant(a){
@@ -552,7 +578,7 @@ function fVenc(id,k,renov){
     '<hr class="fdiv">'+
     (v.archivo?'<div class="hint">Adjunto actual: '+esc(v.archivo.nombre)+' <button type="button" class="btn bs sm" data-act="ver-archivo" data-id="'+a.id+'" data-k="'+k+'" style="margin-left:6px">👁 Ver</button></div><label class="chk"><input type="checkbox" name="quitarArchivo" value="1"> <span>Quitar el archivo adjunto</span></label>':'')+
     '<div class="fg"><label class="fl">'+(v.archivo?'Reemplazar archivo (foto o PDF)':'Adjuntar archivo (foto o PDF, opcional)')+'</label><input class="fi" type="file" name="archivo" accept="image/*,application/pdf"></div>'+
-    '<div class="hint">Queda guardado en este celular; no viaja en el backup JSON.</div>'+
+    '<div class="hint">Se guarda en la nube: lo va a ver también quien más use la app.</div>'+
     txta('notas','Notas',v.notas,'txt')+okBtn());
 }
 function fEsc(id,sid){
@@ -619,7 +645,7 @@ function fAjustes(){
      '<button class="btn bs full" type="button" data-act="notif">🔔 Activar notificaciones</button>')+
     '<div class="note">Para avisos 100% seguros aunque no abras la app, usá <b>📅 Al calendario</b> en cada vencimiento: queda en tu calendario con recordatorios propios, 7 y 1 día antes.</div>'+
     '<div class="stitle" style="margin-top:18px">Backup</div>'+
-    '<div class="meta">Los datos quedan guardados en este teléfono. Exportá un backup de vez en cuando (por ejemplo a Drive). Las fotos y PDF adjuntos NO se incluyen en el backup: quedan en este celular.</div>'+
+    '<div class="meta">Los datos se guardan en la nube (Supabase) y se ven igual desde cualquier celular que use esta app, fotos y PDF incluidos. Igual conviene exportar un backup de vez en cuando por las dudas.</div>'+
     '<button class="btn bs full" type="button" data-act="exportar">📤 Exportar backup</button>'+
     '<button class="btn bs full" type="button" data-act="importar">📥 Importar backup</button>'+
     '<input type="file" id="fimp" accept=".json,application/json" hidden>');
@@ -628,17 +654,19 @@ function fDoc(id){
   modal('📄 Nuevo documento','doc',hid('id',id)+
     inp('nombre','Nombre *',null,'required placeholder="Ej: Cédula verde, Cédula azul"')+
     '<div class="fg"><label class="fl">Foto o PDF *</label><input class="fi" type="file" name="archivo" accept="image/*,application/pdf" required></div>'+
-    '<div class="hint">Queda guardado en este celular; no viaja en el backup JSON.</div>'+okBtn());
+    '<div class="hint">Se guarda en la nube: lo va a ver también quien más use la app.</div>'+okBtn());
 }
-function fLicencia(){
-  const lv=D.licencia||{},av=avisoDe(lv,{avisoDef:30});
-  modal('🪪 Licencia de conducir','licencia',
+function fLicencia(id){
+  const lv=id?(D.licencias||[]).find(x=>x.id===id):{},av=avisoDe(lv,{avisoDef:30});
+  modal(id?'🪪 Editar licencia':'🪪 Nueva licencia','licencia',hid('id',id)+
+    inp('nombre','Nombre *',lv.nombre,'required placeholder="Ej: Pablo, Señora"')+
     inp('fecha','Fecha de vencimiento',lv.fecha,'type="date"')+
     inp('aviso','Avisar con cuántos días de anticipación',av,'type="number" min="1" max="365" required')+
-    (lv.archivo?'<div class="hint">Adjunto actual: '+esc(lv.archivo.nombre)+' <button type="button" class="btn bs sm" data-act="ver-lic" style="margin-left:6px">👁 Ver</button></div><label class="chk"><input type="checkbox" name="quitarArchivo" value="1"> <span>Quitar el archivo adjunto</span></label>':'')+
+    (lv.archivo?'<div class="hint">Adjunto actual: '+esc(lv.archivo.nombre)+' <button type="button" class="btn bs sm" data-act="ver-lic" data-id="'+id+'" style="margin-left:6px">👁 Ver</button></div><label class="chk"><input type="checkbox" name="quitarArchivo" value="1"> <span>Quitar el archivo adjunto</span></label>':'')+
     '<div class="fg"><label class="fl">'+(lv.archivo?'Reemplazar archivo (foto o PDF)':'Adjuntar archivo (foto o PDF, opcional)')+'</label><input class="fi" type="file" name="archivo" accept="image/*,application/pdf"></div>'+
-    '<div class="hint">Queda guardado en este celular; no viaja en el backup JSON.</div>'+
-    txta('notas','Notas',lv.notas,'txt')+okBtn());
+    '<div class="hint">Se guarda en la nube (Supabase): lo van a ver los dos celulares.</div>'+
+    txta('notas','Notas',lv.notas,'txt')+okBtn()+
+    (id?'<button class="btn bd full" type="button" data-act="lic-del" data-id="'+id+'">🗑 Eliminar licencia</button>':''));
 }
 
 /* ───────── Guardado de formularios ───────── */
@@ -668,11 +696,14 @@ const FORMS={
     return 'Documento guardado';
   },
   async licencia(f){
-    const old=D.licencia||{};
-    const v={fecha:f.fecha||null,aviso:num(f.aviso),notas:f.notas.trim(),archivo:old.archivo||null};
-    if(f.quitarArchivo==='1'){if(old.archivo)await idbDel(old.archivo.id).catch(()=>{});v.archivo=null;}
+    D.licencias=D.licencias||[];
+    const old=f.id?D.licencias.find(x=>x.id===f.id):{};
+    const v={id:f.id||uid(),nombre:f.nombre.trim(),fecha:f.fecha||null,aviso:num(f.aviso),notas:f.notas.trim(),archivo:old.archivo||null};
+    if(f.quitarArchivo==='1'){if(old.archivo)await idbDel(old.archivo.id);v.archivo=null;}
     else if(f.archivo instanceof File&&f.archivo.size>0)v.archivo=await guardarArchivo(old.archivo,f.archivo);
-    D.licencia=v;return 'Licencia guardada';
+    if(f.id){const i=D.licencias.findIndex(x=>x.id===f.id);D.licencias[i]=v;}
+    else D.licencias.push(v);
+    return 'Licencia guardada';
   },
   esc(f){
     const a=autoById(f.id),{ok}=parseCods(f.codigos);
@@ -775,8 +806,9 @@ document.addEventListener('click',e=>{
     case 'doc-form':fDoc(id);break;
     case 'ver-doc':{const a=autoById(id),d=(a.documentos||[]).find(x=>x.id===el.dataset.did);if(d)verArchivo(d.archivo);break;}
     case 'doc-del':if(confirm('¿Eliminar este documento?')){const a=autoById(id),d=(a.documentos||[]).find(x=>x.id===el.dataset.did);(async()=>{if(d){if(d.archivo)await idbDel(d.archivo.id).catch(()=>{});a.documentos=a.documentos.filter(x=>x.id!==el.dataset.did);save();render();}})();}break;
-    case 'lic-form':fLicencia();break;
-    case 'ver-lic':if(D.licencia&&D.licencia.archivo)verArchivo(D.licencia.archivo);break;
+    case 'lic-form':fLicencia(id);break;
+    case 'ver-lic':{const lv=(D.licencias||[]).find(x=>x.id===id);if(lv&&lv.archivo)verArchivo(lv.archivo);break;}
+    case 'lic-del':if(confirm('¿Eliminar esta licencia?')){const lv=(D.licencias||[]).find(x=>x.id===id);(async()=>{if(lv){if(lv.archivo)await idbDel(lv.archivo.id);D.licencias=D.licencias.filter(x=>x.id!==id);await save();cerrar();render();}})();}break;
     case 'ajustes':fAjustes();break;
     case 'auto-del':{const a=autoById(id);if(confirm('¿Eliminar '+a.nombre+' con todo su historial?')){D.autos=D.autos.filter(x=>x.id!==id);V.auto=null;save();cerrar();render();}break;}
     case 'esc-del':if(confirm('¿Eliminar este escaneo?')){const a=autoById(id);a.escaneos=a.escaneos.filter(x=>x.id!==el.dataset.sid);save();render();}break;
