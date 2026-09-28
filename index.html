@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1e2340">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<title>Mis Autos</title>
+<style>
+:root{
+  --bg:#eef1f8;--card:#fff;--card2:#f4f6fc;--border:#dde2ef;--text:#1e2340;--muted:#6f7794;
+  --accent:#f59e0b;--blue:#3b6fd4;--green:#0f9f6e;--red:#dc2626;--orange:#ea6a0c;
+  --red-bg:#fef2f2;--orange-bg:#fff7ed;--green-bg:#ecfdf5;--blue-bg:#eff4ff;--gray-bg:#f3f4f6;
+  --r:14px;--shadow:0 1px 6px rgba(30,35,64,.08);
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#10131f;--card:#1a1e2e;--card2:#222739;--border:#2e3450;--text:#e8eaf3;--muted:#98a0bd;
+  --red-bg:#3a1618;--orange-bg:#3a2412;--green-bg:#0f2f25;--blue-bg:#16213d;--gray-bg:#262a3a;
+  --shadow:0 1px 6px rgba(0,0,0,.35);
+}}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--text);font:15px/1.4 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:520px;margin:0 auto;min-height:100vh;padding-bottom:90px}
+button,input,select,textarea{font:inherit;color:inherit}
+.hdr{position:sticky;top:0;z-index:50;background:var(--card);border-bottom:1px solid var(--border);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;box-shadow:var(--shadow)}
+.logo{font-size:19px;font-weight:900;letter-spacing:-.4px}.logo b{color:var(--accent)}
+.ibtn{background:var(--card2);border:1px solid var(--border);border-radius:10px;width:38px;height:38px;cursor:pointer;font-size:17px}
+.sec{padding:14px 16px}
+.stitle{font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin:6px 0 10px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:13px 14px;margin-bottom:10px;box-shadow:var(--shadow)}
+.tap{cursor:pointer}.tap:active{transform:scale(.99)}
+.row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.ttl{font-weight:800;font-size:16px}
+.meta{font-size:12.5px;color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+.chip{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:12px;font-weight:700;border:1px solid transparent}
+.c-r{background:var(--red-bg);color:var(--red)}.c-o{background:var(--orange-bg);color:var(--orange)}
+.c-g{background:var(--green-bg);color:var(--green)}.c-b{background:var(--blue-bg);color:var(--blue)}.c-n{background:var(--gray-bg);color:var(--muted)}
+.al{border-radius:12px;padding:11px 13px;margin-bottom:8px;border-left:4px solid;cursor:pointer}
+.al-4,.al-3{background:var(--red-bg);border-color:var(--red)}.al-2{background:var(--orange-bg);border-color:var(--orange)}.al-1{background:var(--blue-bg);border-color:var(--blue)}
+.al-t{font-weight:800;font-size:13.5px}.al-s{font-size:12.5px;color:var(--muted);margin-top:2px}
+.btn{border:none;border-radius:10px;padding:10px 15px;font-weight:700;font-size:14px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;text-decoration:none}
+.btn:active{opacity:.8}
+.bp{background:var(--accent);color:#fff}.bs{background:var(--card2);border:1px solid var(--border);color:var(--text)}
+.bd{background:var(--red-bg);color:var(--red);border:1px solid transparent}
+.sm{padding:6px 11px;font-size:12.5px;border-radius:8px}.full{width:100%;margin-top:8px}
+.acts{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
+.fab{position:fixed;bottom:22px;right:max(18px,calc(50% - 242px));width:58px;height:58px;border-radius:50%;background:var(--accent);color:#fff;border:none;font-size:28px;cursor:pointer;box-shadow:0 5px 18px rgba(245,158,11,.45);z-index:40}
+.tabs{display:flex;background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:3px;margin-bottom:14px}
+.tab{flex:1;border:none;background:transparent;padding:8px 4px;border-radius:9px;font-weight:700;font-size:13px;color:var(--muted);cursor:pointer}
+.tab.on{background:var(--card);color:var(--text);box-shadow:var(--shadow)}
+.big{font-size:26px;font-weight:900;color:var(--accent)}
+.empty{text-align:center;color:var(--muted);padding:34px 16px}.empty .e{font-size:42px;margin-bottom:6px}
+.code{display:flex;gap:8px;align-items:flex-start;padding:7px 0;border-top:1px solid var(--border);font-size:13px}
+.code:first-of-type{border-top:none}
+.code b{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13.5px;min-width:52px}
+.code .d{flex:1}.code a{color:var(--blue);font-size:12px;white-space:nowrap}
+.res{text-decoration:line-through;opacity:.75}
+.mo{position:fixed;inset:0;background:rgba(10,12,25,.55);z-index:100;display:flex;align-items:flex-end;justify-content:center}
+.mbox{background:var(--card);border-radius:20px 20px 0 0;width:100%;max-width:520px;max-height:92vh;overflow-y:auto;padding:18px 16px 32px}
+.mh{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}.mh h3{font-size:17px}
+.fg{margin-bottom:12px}.fl{display:block;font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px}
+.fi{width:100%;background:var(--card2);border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;font-size:15px}
+.fi:focus{outline:none;border-color:var(--accent)}
+textarea.fi{min-height:74px;resize:vertical;font-family:ui-monospace,Menlo,Consolas,monospace;text-transform:uppercase}
+textarea.fi.txt{font-family:inherit;text-transform:none;min-height:56px}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.hint{font-size:12px;color:var(--muted);margin-top:4px}
+.chk{display:flex;align-items:center;gap:8px;padding:6px 0;font-size:14px}.chk input{width:18px;height:18px;accent-color:var(--accent)}
+.prev{background:var(--card2);border-radius:10px;padding:8px 10px;margin-top:8px}
+.toast{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:9px 18px;border-radius:20px;font-size:13.5px;font-weight:700;opacity:0;transition:opacity .3s;pointer-events:none;z-index:200;max-width:90%;text-align:center}
+.toast.show{opacity:1}
+.note{font-size:12.5px;color:var(--muted);background:var(--card2);border-radius:10px;padding:10px 12px;margin-top:10px}
+</style>
+</head>
+<body>
+<header class="hdr">
+  <div class="logo">🚗 Mis <b>Autos</b></div>
+  <button class="ibtn" data-act="ajustes" aria-label="Ajustes">⚙️</button>
+</header>
+<main id="app"></main>
+<div id="modal"></div>
+<div class="toast" id="toast"></div>
+<script>
+'use strict';
+/* ───────── Datos ───────── */
+const SK='misautos_v1';
+let D={autos:[],ajustes:{aviso:30},ultNotif:''};
+let V={auto:null,tab:'venc'};
+let storageOK=true;
+
+function load(){try{const s=localStorage.getItem(SK);if(s)D={...D,...JSON.parse(s)};}catch(e){storageOK=false;}D.ajustes={aviso:30,...(D.ajustes||{})};}
+function save(){try{localStorage.setItem(SK,JSON.stringify(D));}catch(e){storageOK=false;toast('⚠️ No se pudo guardar. Exportá un backup.',4000);}}
+
+const VTIPOS=[
+  {k:'seguro',n:'Seguro',ico:'🛡️',extra:[['compania','Compañía'],['poliza','N° de póliza']],renov:0},
+  {k:'rto',n:'RTO / VTV',ico:'🔍',extra:[['planta','Planta / lugar']],renov:12},
+  {k:'matafuego',n:'Matafuego',ico:'🧯',extra:[['empresa','Empresa de recarga']],renov:12},
+];
+// Mantenimiento: se vence por km recorridos desde el último cambio, por tiempo desde la fecha,
+// o por lo que ocurra primero. kmInt/mesInt en 0 desactiva ese criterio (ej: batería, sin km fijo).
+const MTIPOS=[
+  {k:'aceiteMotor',n:'Aceite de motor',ico:'🛢️',kmInt:10000,mesInt:12},
+  {k:'aceiteCaja',n:'Aceite de caja',ico:'⚙️',kmInt:40000,mesInt:24},
+  {k:'bateria',n:'Batería',ico:'🔋',kmInt:0,mesInt:24},
+  {k:'refrigerante',n:'Líquido refrigerante',ico:'🧊',kmInt:40000,mesInt:24},
+  {k:'ruedas',n:'Calibración / alineación de ruedas',ico:'🛞',kmInt:10000,mesInt:12},
+];
+
+/* ───────── Utilidades ───────── */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const iso=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const hoy=()=>iso(new Date());
+const parseF=f=>{const[y,m,d]=f.split('-').map(Number);return new Date(y,m-1,d);};
+function dias(f){if(!f)return null;const n=new Date();n.setHours(0,0,0,0);return Math.round((parseF(f)-n)/864e5);}
+function fmt(f){if(!f)return'—';const[y,m,d]=f.split('-');return d+'/'+m+'/'+y;}
+function sumarMeses(f,m){const d=parseF(f);d.setMonth(d.getMonth()+m);return iso(d);}
+const num=x=>x==null||String(x).trim()===''?null:Number(x);
+const kmf=x=>x==null?'—':Number(x).toLocaleString('es-AR')+' km';
+const plata=x=>x==null?'':'$'+Number(x).toLocaleString('es-AR');
+const nombreAuto=a=>a.nombre+(a.patente?' ('+a.patente+')':'');
+let tT;function toast(m,ms){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(tT);tT=setTimeout(()=>t.classList.remove('show'),ms||2200);}
+const autoById=id=>D.autos.find(a=>a.id===id);
+
+/* ───────── Códigos de falla (OBD2) ───────── */
+const DTC={
+P0011:'Árbol de levas admisión: avance excesivo / rendimiento (banco 1)',P0012:'Árbol de levas admisión: retraso excesivo (banco 1)',P0016:'Correlación cigüeñal / árbol de levas (banco 1)',
+P0030:'Calefactor sonda lambda B1S1: circuito de control',P0087:'Presión del riel de combustible demasiado baja',P0088:'Presión del riel de combustible demasiado alta',P0093:'Fuga grande en sistema de combustible',
+P0100:'Sensor de flujo de aire (MAF): circuito',P0101:'Sensor MAF: rango / rendimiento',P0102:'Sensor MAF: señal baja',P0103:'Sensor MAF: señal alta',
+P0105:'Sensor de presión absoluta (MAP): circuito',P0106:'Sensor MAP: rango / rendimiento',P0107:'Sensor MAP: señal baja',P0108:'Sensor MAP: señal alta',
+P0110:'Sensor temperatura aire de admisión: circuito',P0112:'Sensor temperatura aire admisión: señal baja',P0113:'Sensor temperatura aire admisión: señal alta',
+P0115:'Sensor temperatura refrigerante: circuito',P0117:'Sensor temperatura refrigerante: señal baja',P0118:'Sensor temperatura refrigerante: señal alta',
+P0120:'Sensor posición acelerador (TPS): circuito',P0121:'TPS: rango / rendimiento',P0122:'TPS: señal baja',P0123:'TPS: señal alta',
+P0125:'Temperatura de refrigerante insuficiente para lazo cerrado',P0128:'Termostato: motor no llega a temperatura',
+P0130:'Sonda lambda B1S1: circuito',P0131:'Sonda lambda B1S1: voltaje bajo',P0132:'Sonda lambda B1S1: voltaje alto',P0133:'Sonda lambda B1S1: respuesta lenta',P0134:'Sonda lambda B1S1: sin actividad',P0135:'Sonda lambda B1S1: calefactor',
+P0136:'Sonda lambda B1S2: circuito',P0141:'Sonda lambda B1S2: calefactor',
+P0171:'Mezcla pobre (banco 1)',P0172:'Mezcla rica (banco 1)',P0174:'Mezcla pobre (banco 2)',P0175:'Mezcla rica (banco 2)',
+P0190:'Sensor presión riel de combustible: circuito',P0191:'Sensor presión riel: rango / rendimiento',
+P0201:'Inyector cilindro 1: circuito',P0202:'Inyector cilindro 2: circuito',P0203:'Inyector cilindro 3: circuito',P0204:'Inyector cilindro 4: circuito',
+P0217:'Sobretemperatura del motor',P0230:'Bomba de combustible: circuito primario',P0234:'Turbo: sobrealimentación',P0244:'Turbo: solenoide wastegate',P0299:'Turbo: baja presión de sobrealimentación',
+P0300:'Fallo de encendido aleatorio / múltiple',P0301:'Fallo de encendido cilindro 1',P0302:'Fallo de encendido cilindro 2',P0303:'Fallo de encendido cilindro 3',P0304:'Fallo de encendido cilindro 4',P0305:'Fallo de encendido cilindro 5',P0306:'Fallo de encendido cilindro 6',
+P0325:'Sensor de detonación: circuito',P0335:'Sensor posición cigüeñal (CKP): circuito',P0336:'Sensor CKP: rango / rendimiento',P0340:'Sensor árbol de levas (CMP): circuito',P0341:'Sensor CMP: rango / rendimiento',
+P0351:'Bobina de encendido A (cil. 1): circuito',P0352:'Bobina de encendido B (cil. 2): circuito',P0353:'Bobina de encendido C (cil. 3): circuito',P0354:'Bobina de encendido D (cil. 4): circuito',
+P0380:'Bujías de precalentamiento: circuito',P0400:'EGR: flujo incorrecto',P0401:'EGR: flujo insuficiente',P0402:'EGR: flujo excesivo',P0403:'EGR: circuito',
+P0420:'Eficiencia del catalizador bajo el mínimo (banco 1)',P0430:'Eficiencia del catalizador bajo el mínimo (banco 2)',
+P0440:'Sistema EVAP (canister): falla',P0441:'EVAP: flujo de purga incorrecto',P0442:'EVAP: fuga pequeña',P0443:'EVAP: válvula de purga, circuito',P0446:'EVAP: ventilación',P0455:'EVAP: fuga grande (revisar tapa de nafta)',P0456:'EVAP: fuga muy pequeña',
+P0480:'Electroventilador 1: circuito',P0500:'Sensor de velocidad del vehículo (VSS)',P0505:'Control de ralentí (IAC)',P0506:'Ralentí más bajo de lo esperado',P0507:'Ralentí más alto de lo esperado',
+P0520:'Sensor presión de aceite: circuito',P0521:'Sensor presión de aceite: rango / rendimiento',P0562:'Voltaje del sistema bajo (batería / alternador)',P0563:'Voltaje del sistema alto',P0571:'Interruptor de freno: circuito',
+P0600:'Comunicación serial de la ECU',P0601:'ECU: error de memoria',P0606:'ECU: error del procesador',P0627:'Bomba de combustible: circuito de control',P0645:'Relé embrague del aire acondicionado',
+P0700:'Sistema de control de la transmisión (ver códigos de caja)',P0705:'Sensor de rango de la transmisión',P0715:'Sensor velocidad de entrada / turbina',P0720:'Sensor velocidad de salida',P0730:'Relación de marcha incorrecta',P0740:'Embrague del convertidor de par',P0741:'Convertidor de par: atascado abierto',
+P2002:'Filtro de partículas (DPF): eficiencia baja',P2135:'TPS: correlación sensor A/B',P2187:'Mezcla pobre en ralentí (banco 1)',P2188:'Mezcla rica en ralentí (banco 1)',P2463:'DPF: acumulación de hollín',
+C0035:'Sensor velocidad rueda delantera izquierda',C0040:'Sensor velocidad rueda delantera derecha',C0045:'Sensor velocidad rueda trasera izquierda',C0050:'Sensor velocidad rueda trasera derecha',
+U0100:'Sin comunicación con la ECU del motor',U0101:'Sin comunicación con el módulo de la caja',U0121:'Sin comunicación con el módulo ABS',U0140:'Sin comunicación con el módulo de carrocería (BCM)',U0155:'Sin comunicación con el tablero',
+};
+const RX=/\b[PBCU][0-9A-F]{4}\b/g;
+function descCod(c){
+  if(DTC[c])return DTC[c];
+  const tipo={P:'Motor / transmisión',B:'Carrocería',C:'Chasis',U:'Comunicación / red'}[c[0]]||'';
+  return tipo+(c[1]==='0'?' · código genérico':' · código propio de la marca');
+}
+// Busca códigos de falla (P0301, etc.) donde sea que aparezcan en el texto — sirve tanto para
+// tipearlos sueltos como para pegar la respuesta completa de Gemini/otra IA con frases alrededor.
+function parseCods(txt){const ok=[...new Set(String(txt||'').toUpperCase().match(RX)||[])];return{ok};}
+const gLink=c=>'https://www.google.com/search?q='+encodeURIComponent(c+' código falla significado');
+
+/* ── Siglas de datos en vivo (PID) que muestran los escáneres OBD2 ── */
+const PIDDESC={
+LONGFT1:'Corrección de mezcla a largo plazo, banco 1',LONGFT2:'Corrección de mezcla a largo plazo, banco 2',
+SHRTFT1:'Corrección de mezcla a corto plazo, banco 1',SHRTFT2:'Corrección de mezcla a corto plazo, banco 2',
+SHRTFTB1S1:'Corrección de mezcla a corto plazo, banco 1 sensor 1',SHRTFTB1S2:'Corrección de mezcla a corto plazo, banco 1 sensor 2',
+MAP:'Presión absoluta en el múltiple de admisión',RPM:'Revoluciones del motor por minuto',
+VSS:'Velocidad del vehículo',SPARKADV:'Avance de encendido',IAT:'Temperatura del aire de admisión',
+ECT:'Temperatura del refrigerante del motor',EVAP_VP:'Presión del sistema de evaporación (EVAP)',
+EVAP_PCT:'Porcentaje de carga del test del sistema EVAP',BARO:'Presión barométrica',
+CATEMP11:'Temperatura del catalizador, banco 1 sensor 1',CATEMP12:'Temperatura del catalizador, banco 1 sensor 2',
+VPWR:'Voltaje de alimentación del módulo (batería / alternador)',LOAD_ABS:'Carga absoluta del motor',
+LOAD_PCT:'Carga calculada del motor',LOAD:'Carga calculada del motor',EQ_RAT:'Relación de equivalencia aire/combustible',
+TP:'Posición del acelerador',TP_R:'Posición relativa del acelerador',TP_B:'Posición del acelerador (sensor B)',
+AAT:'Temperatura ambiente del aire',APP_D:'Posición del pedal del acelerador (sensor D)',
+APP_E:'Posición del pedal del acelerador (sensor E)',TAC_PCT:'Apertura del cuerpo de aceleración electrónico (TAC)',
+MAF:'Flujo másico de aire',O2B1S1:'Voltaje sonda de oxígeno, banco 1 sensor 1',O2B1S2:'Voltaje sonda de oxígeno, banco 1 sensor 2',
+O2B2S1:'Voltaje sonda de oxígeno, banco 2 sensor 1',O2B2S2:'Voltaje sonda de oxígeno, banco 2 sensor 2',
+OBDSUP:'Norma OBD que soporta el vehículo',RUNTM:'Tiempo de funcionamiento del motor desde el arranque',
+ML_DIST:'Distancia recorrida con el testigo de falla (MIL) encendido',CLR_DIST:'Distancia recorrida desde que se borraron los códigos',
+WARM_UPS:'Ciclos de calentamiento del motor desde que se borraron los códigos',DTC_CNT:'Cantidad de códigos de falla almacenados',
+FUELSYS1:'Estado del sistema de combustible 1 (lazo abierto/cerrado)',FUELSYS2:'Estado del sistema de combustible 2',
+FLI:'Nivel de combustible',FRP:'Presión del riel de combustible',
+};
+// El nombre puede venir con la unidad entre paréntesis tal cual lo muestra el escáner (ej: "RPM(/min)");
+// se usa sin esa parte para buscar en el diccionario.
+function descMedida(n){return PIDDESC[String(n||'').toUpperCase().replace(/\(.*?\)/g,'').trim()]||null;}
+
+/* ───────── Lógica de escaneos y trabajos ───────── */
+const escOrd=a=>(a.escaneos||[]).slice().sort((x,y)=>x.fecha.localeCompare(y.fecha)||x.creado-y.creado);
+function comparar(a,s){
+  const ord=escOrd(a),i=ord.findIndex(x=>x.id===s.id),prev=i>0?ord[i-1]:null;
+  const pc=prev?prev.codigos:[];
+  return{prev,
+    nuevos:s.codigos.filter(c=>!pc.includes(c)),
+    siguen:s.codigos.filter(c=>pc.includes(c)),
+    resueltos:pc.filter(c=>!s.codigos.includes(c))};
+}
+function escDespues(a,t){return escOrd(a).find(s=>s.fecha>t.fecha||(s.fecha===t.fecha&&s.creado>t.creado));}
+/* ── Mediciones libres (consumo, sondas de oxígeno, temperaturas, presión, etc.) ── */
+const normN=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').trim().replace(/\s+/g,' ');
+function parseMedidas(txt){
+  const out=[];
+  String(txt||'').split(/\r?\n/).forEach(l=>{
+    l=l.replace(/^[-•*]\s*/,'').trim();if(!l)return;
+    const m=l.match(/^([^:]{2,64}):\s*(.+)$/);
+    if(m&&m[1].trim()&&m[2].trim())out.push({n:m[1].trim(),v:m[2].trim()});
+  });
+  if(!out.length&&String(txt||'').trim())out.push({n:'Notas del escaneo',v:txt.trim()});
+  return out;
+}
+function medidasTxt(list){return (list||[]).map(m=>m.n+': '+m.v).join('\n');}
+function medidaCmp(prevList,n,v){
+  if(!prevList)return null;
+  const match=prevList.find(x=>normN(x.n)===normN(n));
+  if(!match)return{e:'nuevo'};
+  if(String(match.v).trim()===String(v).trim())return{e:'igual',prev:match.v};
+  const nn=parseFloat(String(v).replace(',','.')),np=parseFloat(String(match.v).replace(',','.'));
+  if(!isNaN(nn)&&!isNaN(np))return{e:nn>np?'subio':'bajo',prev:match.v};
+  return{e:'cambio',prev:match.v};
+}
+const MCMP={igual:['c-g','= igual que antes'],nuevo:['c-b','nuevo dato'],subio:['c-o','↑ antes: '],bajo:['c-o','↓ antes: '],cambio:['c-o','antes: ']};
+function verificar(a,t){
+  if(!t.codigos||!t.codigos.length)return null;
+  const s=escDespues(a,t);
+  if(!s)return{pend:true};
+  return{pend:false,esc:s,volvieron:t.codigos.filter(c=>s.codigos.includes(c)),ok:t.codigos.filter(c=>!s.codigos.includes(c))};
+}
+function estadoV(v){
+  const d=dias(v&&v.fecha);
+  if(d==null)return{c:'n',txt:'Sin fecha',nivel:1,d};
+  if(d<0)return{c:'r',txt:'VENCIDO',nivel:4,d};
+  if(d===0)return{c:'r',txt:'Vence HOY',nivel:4,d};
+  if(d<=7)return{c:'r',txt:d+' días',nivel:3,d};
+  if(d<=D.ajustes.aviso)return{c:'o',txt:d+' días',nivel:2,d};
+  return{c:'g',txt:'OK · '+d+' días',nivel:0,d};
+}
+// Vencimiento por km y/o por tiempo desde el último cambio; se avisa por el que esté más cerca.
+function estadoM(a,item,m){
+  if(!m||(!m.fecha&&m.km==null))return{c:'n',txt:'Sin registrar',nivel:1};
+  let dRest=null,kRest=null;
+  if(item.mesInt&&m.fecha)dRest=dias(sumarMeses(m.fecha,item.mesInt));
+  if(item.kmInt&&m.km!=null&&a.km!=null)kRest=item.kmInt-(a.km-m.km);
+  if(dRest==null&&kRest==null)return{c:'n',txt:'Sin referencia para avisar',nivel:1};
+  let nivel=0;const motivos=[];
+  if(dRest!=null){
+    if(dRest<0){nivel=4;motivos.push('vencido hace '+(-dRest)+' días');}
+    else if(dRest<=7){nivel=Math.max(nivel,3);motivos.push(dRest+' días');}
+    else if(dRest<=D.ajustes.aviso){nivel=Math.max(nivel,2);motivos.push(dRest+' días');}
+  }
+  if(kRest!=null){
+    if(kRest<=0){nivel=4;motivos.push('pasado por '+Math.abs(kRest).toLocaleString('es-AR')+' km');}
+    else if(kRest<=300){nivel=Math.max(nivel,3);motivos.push('faltan '+kRest.toLocaleString('es-AR')+' km');}
+    else if(kRest<=1500){nivel=Math.max(nivel,2);motivos.push('faltan '+kRest.toLocaleString('es-AR')+' km');}
+  }
+  const map={0:'g',2:'o',3:'r',4:'r'};
+  return{c:map[nivel]||'g',txt:nivel?motivos.join(' · '):'OK',nivel,dRest,kRest};
+}
+function alertas(){
+  const out=[];
+  D.autos.forEach(a=>{
+    VTIPOS.forEach(t=>{
+      const v=(a.venc||{})[t.k]||{},e=estadoV(v);if(!e.nivel)return;
+      let sub;
+      if(e.d==null)sub='Cargá la fecha para que te avise';
+      else if(e.d<0)sub='Venció el '+fmt(v.fecha)+' (hace '+(-e.d)+' días)';
+      else if(e.d===0)sub='Vence hoy, '+fmt(v.fecha);
+      else sub='Vence el '+fmt(v.fecha)+' · faltan '+e.d+' días';
+      out.push({nivel:e.nivel,a,tab:'venc',t:t.ico+' '+t.n+(e.d!=null&&e.d<0?' VENCIDO':e.d==null?' sin cargar':''),sub});
+    });
+    MTIPOS.forEach(t=>{
+      const m=(a.mant||{})[t.k],e=estadoM(a,t,m);if(e.nivel<2)return;
+      out.push({nivel:e.nivel,a,tab:'mant',t:t.ico+' '+t.n+(e.nivel>=4?' VENCIDO':''),sub:m&&m.fecha?'Último: '+fmt(m.fecha)+(m.km!=null?' · '+kmf(m.km):'')+' · '+e.txt:'Cargá cuándo fue el último para que te avise'});
+    });
+    const ord=escOrd(a),ult=ord[ord.length-1];
+    if(ult&&ult.codigos.length){
+      const cmp=comparar(a,ult);
+      if(cmp.prev&&cmp.nuevos.length)out.push({nivel:3,a,tab:'esc',t:'🩺 Códigos NUEVOS en el último escaneo',sub:cmp.nuevos.join(', ')+' · '+fmt(ult.fecha)});
+      const act=cmp.prev?cmp.siguen:ult.codigos;
+      if(act.length)out.push({nivel:2,a,tab:'esc',t:'🩺 Códigos que siguen activos',sub:act.join(', ')+' · último escaneo '+fmt(ult.fecha)});
+    }
+    (a.trabajos||[]).forEach(t=>{
+      const vf=verificar(a,t);if(!vf)return;
+      if(vf.pend)out.push({nivel:1,a,tab:'esc',t:'🔧 Escaneá para verificar un arreglo',sub:t.desc+' ('+fmt(t.fecha)+') · buscaba borrar '+t.codigos.join(', ')});
+      else if(vf.volvieron.length&&ult&&vf.esc.id===ult.id)out.push({nivel:3,a,tab:'trab',t:'🔧 El arreglo no solucionó todo',sub:t.desc+' · volvió '+vf.volvieron.join(', ')});
+    });
+  });
+  return out.sort((x,y)=>y.nivel-x.nivel);
+}
+
+/* ───────── Vistas ───────── */
+function render(){
+  const a=V.auto&&autoById(V.auto);
+  if(!a)V.auto=null;
+  $('#app').innerHTML=a?vAuto(a):vInicio();
+}
+function vInicio(){
+  let h='<div class="sec">';
+  if(!storageOK)h+='<div class="al al-3"><div class="al-t">⚠️ El navegador no permite guardar</div><div class="al-s">Usá ⚙️ → Exportar backup para no perder datos.</div></div>';
+  if(!D.autos.length)return h+'<div class="empty"><div class="e">🚗</div><div style="font-weight:800;margin-bottom:4px">Agregá tu primer auto</div>Después cargá el vencimiento del seguro, la RTO y el matafuego, y los escaneos que le hagas.</div><button class="btn bp full" data-act="auto-form">+ Agregar auto</button></div>';
+  const al=alertas();
+  const fuertes=al.filter(x=>x.nivel>=2),leves=al.filter(x=>x.nivel<2);
+  h+='<div class="stitle">Avisos</div>';
+  if(!fuertes.length)h+='<div class="card" style="text-align:center"><div style="font-size:30px">✅</div><div style="font-weight:800">Todo al día</div><div class="meta">Nada vence en los próximos '+D.ajustes.aviso+' días</div></div>';
+  fuertes.forEach(x=>h+=vAlerta(x));
+  leves.forEach(x=>h+=vAlerta(x));
+  h+='<div class="stitle" style="margin-top:16px">Mis autos</div>';
+  D.autos.forEach(a=>{
+    const ord=escOrd(a),ult=ord[ord.length-1];
+    h+='<div class="card tap" data-act="abrir" data-id="'+a.id+'"><div class="row"><div><div class="ttl">🚗 '+esc(a.nombre)+'</div><div class="meta">'+esc([a.patente,a.marca,a.modelo,a.anio].filter(Boolean).join(' · '))+'</div></div><div class="meta" style="text-align:right">'+kmf(a.km)+'</div></div><div class="chips">';
+    VTIPOS.forEach(t=>{const e=estadoV((a.venc||{})[t.k]);h+='<span class="chip c-'+e.c+'">'+t.ico+' '+esc(e.txt.replace('OK · ',''))+'</span>';});
+    h+=ult?'<span class="chip '+(ult.codigos.length?'c-o':'c-g')+'">🩺 '+(ult.codigos.length?ult.codigos.length+' cód.':'limpio')+'</span>':'<span class="chip c-n">🩺 sin escaneos</span>';
+    const mp=MTIPOS.map(t=>estadoM(a,t,(a.mant||{})[t.k])).filter(e=>e.nivel>=2);
+    if(mp.length)h+='<span class="chip c-'+(mp.some(e=>e.nivel>=3)?'r':'o')+'">🛠️ '+mp.length+' pendiente(s)</span>';
+    h+='</div></div>';
+  });
+  return h+'</div><button class="fab" data-act="auto-form" aria-label="Agregar auto">+</button>';
+}
+function vAlerta(x){return '<div class="al al-'+x.nivel+'" data-act="abrir" data-id="'+x.a.id+'" data-tab="'+x.tab+'"><div class="al-t">'+esc(x.t)+' · '+esc(x.a.nombre)+'</div><div class="al-s">'+esc(x.sub)+'</div></div>';}
+
+function vAuto(a){
+  let h='<div class="sec"><div class="row" style="margin-bottom:12px"><button class="btn bs sm" data-act="volver">← Volver</button><button class="btn bs sm" data-act="auto-form" data-id="'+a.id+'">✏️ Editar</button></div>';
+  h+='<div class="card"><div class="ttl" style="font-size:19px">🚗 '+esc(a.nombre)+'</div><div class="meta">'+esc([a.patente,a.marca,a.modelo,a.anio].filter(Boolean).join(' · '))+'</div><div class="row" style="margin-top:8px"><div><div class="meta">Kilometraje</div><div class="big">'+kmf(a.km)+'</div></div><button class="btn bs sm" data-act="km-form" data-id="'+a.id+'">Actualizar km</button></div></div>';
+  const tb=[['venc','📋 Vencimientos'],['esc','🩺 Escaneos'],['trab','🔧 Trabajos'],['mant','🛠️ Mantenimiento']];
+  h+='<div class="tabs">'+tb.map(([k,n])=>'<button class="tab'+(V.tab===k?' on':'')+'" data-act="tab" data-tab="'+k+'">'+n+'</button>').join('')+'</div>';
+  h+=V.tab==='esc'?vEscaneos(a):V.tab==='trab'?vTrabajos(a):V.tab==='mant'?vMant(a):vVenc(a);
+  return h+'</div>';
+}
+function vVenc(a){
+  let h='';
+  VTIPOS.forEach(t=>{
+    const v=(a.venc||{})[t.k]||{},e=estadoV(v);
+    h+='<div class="card"><div class="row"><div class="ttl">'+t.ico+' '+t.n+'</div><span class="chip c-'+e.c+'">'+esc(e.txt)+'</span></div>';
+    h+='<div style="font-size:20px;font-weight:800;margin-top:6px">'+(v.fecha?'Vence '+fmt(v.fecha):'<span class="meta">Sin fecha cargada</span>')+'</div>';
+    t.extra.forEach(([k,n])=>{if(v[k])h+='<div class="meta">'+n+': '+esc(v[k])+'</div>';});
+    if(v.notas)h+='<div class="meta">📝 '+esc(v.notas)+'</div>';
+    if(v.hist&&v.hist.length)h+='<div class="meta">Vencimientos anteriores: '+v.hist.slice(-3).map(fmt).join(', ')+'</div>';
+    h+='<div class="acts"><button class="btn '+(v.fecha?'bs':'bp')+' sm" data-act="venc-form" data-id="'+a.id+'" data-k="'+t.k+'">'+(v.fecha?'✏️ Editar':'+ Cargar fecha')+'</button>';
+    if(v.fecha)h+='<button class="btn bs sm" data-act="venc-form" data-id="'+a.id+'" data-k="'+t.k+'" data-renov="1">🔄 Lo renové</button><button class="btn bs sm" data-act="cal" data-id="'+a.id+'" data-k="'+t.k+'">📅 Al calendario</button>';
+    h+='</div></div>';
+  });
+  return h;
+}
+function vMant(a){
+  let h='';
+  MTIPOS.forEach(t=>{
+    const m=(a.mant||{})[t.k]||{},e=estadoM(a,t,m.fecha||m.km!=null?m:null);
+    h+='<div class="card"><div class="row"><div class="ttl">'+t.ico+' '+t.n+'</div><span class="chip c-'+e.c+'">'+esc(e.txt)+'</span></div>';
+    if(m.fecha||m.km!=null)h+='<div style="font-size:15px;font-weight:800;margin-top:6px">Último: '+(m.fecha?fmt(m.fecha):'—')+(m.km!=null?' · '+kmf(m.km):'')+'</div>';
+    else h+='<div class="meta">Sin registrar todavía</div>';
+    const crit=[];if(t.kmInt)crit.push('cada '+t.kmInt.toLocaleString('es-AR')+' km');if(t.mesInt)crit.push('cada '+t.mesInt+' meses');
+    if(crit.length)h+='<div class="meta">Recordatorio: '+crit.join(' o ')+', lo que pase primero</div>';
+    if(m.notas)h+='<div class="meta">📝 '+esc(m.notas)+'</div>';
+    if(m.hist&&m.hist.length)h+='<div class="meta">Anteriores: '+m.hist.slice(-3).map(h2=>fmt(h2.fecha)+(h2.km!=null?' ('+kmf(h2.km)+')':'')).join(', ')+'</div>';
+    h+='<div class="acts"><button class="btn bp sm" data-act="mant-hecho" data-id="'+a.id+'" data-k="'+t.k+'">✔ Lo hice hoy</button><button class="btn bs sm" data-act="mant-form" data-id="'+a.id+'" data-k="'+t.k+'">✏️ Editar</button>';
+    if(t.mesInt&&m.fecha)h+='<button class="btn bs sm" data-act="cal-mant" data-id="'+a.id+'" data-k="'+t.k+'">📅 Al calendario</button>';
+    h+='</div></div>';
+  });
+  return h;
+}
+function vCodigos(list,cls,etq){return list.map(c=>'<div class="code"><b class="'+(cls==='c-g'?'res':'')+'">'+c+'</b><span class="d">'+esc(descCod(c))+' <span class="chip '+cls+'" style="padding:1px 7px;font-size:11px">'+etq+'</span></span><a href="'+gLink(c)+'" target="_blank" rel="noopener">buscar ↗</a></div>').join('');}
+function vEscaneos(a){
+  const ord=escOrd(a).reverse();
+  let h='<button class="btn bp full" style="margin:0 0 12px" data-act="esc-form" data-id="'+a.id+'">+ Nuevo escaneo</button>';
+  if(!ord.length)return h+'<div class="empty"><div class="e">🩺</div>Sin escaneos todavía.<br>Cuando le pases el escáner, cargá los códigos y la app te dice qué es nuevo, qué sigue y qué se borró.</div>';
+  ord.forEach(s=>{
+    const cmp=comparar(a,s);
+    h+='<div class="card"><div class="row"><div><div class="ttl">'+fmt(s.fecha)+'</div><div class="meta">'+esc([s.km!=null?kmf(s.km):'',s.herr].filter(Boolean).join(' · '))+'</div></div><div class="chips" style="margin:0">';
+    if(!s.codigos.length)h+='<span class="chip c-g">✅ Sin códigos</span>';
+    if(cmp.prev&&cmp.nuevos.length)h+='<span class="chip c-r">'+cmp.nuevos.length+' nuevo(s)</span>';
+    if(!cmp.prev&&s.codigos.length)h+='<span class="chip c-b">Primer escaneo</span>';
+    h+='</div></div>';
+    if(s.codigos.length||cmp.resueltos.length){
+      h+='<div style="margin-top:8px">';
+      h+=vCodigos(cmp.prev?cmp.nuevos:s.codigos,cmp.prev?'c-r':'c-o',cmp.prev?'NUEVO':'activo');
+      h+=vCodigos(cmp.siguen,'c-o','sigue');
+      h+=vCodigos(cmp.resueltos,'c-g','se borró');
+      h+='</div>';
+    }
+    if(s.medidas&&s.medidas.length){
+      h+='<div style="margin-top:8px">';
+      s.medidas.forEach(m=>{
+        const c=medidaCmp(cmp.prev?cmp.prev.medidas:null,m.n,m.v),tag=c?MCMP[c.e]:null,desc=descMedida(m.n);
+        h+='<div class="code"><b style="font-family:inherit;font-size:13px;min-width:0;flex:0 0 42%">'+esc(m.n)+(desc?'<br><span class="meta" style="font-weight:400;font-size:11px">'+esc(desc)+'</span>':'')+'</b><span class="d">'+esc(m.v)+(tag?' <span class="chip '+tag[0]+'" style="font-size:11px">'+tag[1]+(c.prev!=null&&c.e!=='igual'&&c.e!=='nuevo'?esc(c.prev):'')+'</span>':'')+'</span></div>';
+      });
+      h+='</div>';
+    }
+    if(s.notas)h+='<div class="meta" style="margin-top:6px">📝 '+esc(s.notas)+'</div>';
+    h+='<div class="acts"><button class="btn bs sm" data-act="esc-form" data-id="'+a.id+'" data-sid="'+s.id+'">✏️ Editar</button><button class="btn bd sm" data-act="esc-del" data-id="'+a.id+'" data-sid="'+s.id+'">Eliminar</button></div></div>';
+  });
+  return h;
+}
+function vTrabajos(a){
+  const list=(a.trabajos||[]).slice().sort((x,y)=>y.fecha.localeCompare(x.fecha)||y.creado-x.creado);
+  let h='<button class="btn bp full" style="margin:0 0 12px" data-act="trab-form" data-id="'+a.id+'">+ Registrar trabajo / arreglo</button>';
+  if(!list.length)return h+'<div class="empty"><div class="e">🔧</div>Sin trabajos registrados.<br>Si un arreglo apunta a borrar un código, marcalo: en el próximo escaneo la app te dice si volvió o no.</div>';
+  list.forEach(t=>{
+    const vf=verificar(a,t);
+    h+='<div class="card"><div class="row"><div class="ttl" style="font-size:15px">'+esc(t.desc)+'</div><div class="meta">'+fmt(t.fecha)+'</div></div>';
+    h+='<div class="meta">'+esc([t.km!=null?kmf(t.km):'',t.taller,plata(t.costo)].filter(Boolean).join(' · '))+'</div>';
+    if(vf){
+      h+='<div class="chips">';
+      if(vf.pend)h+='<span class="chip c-b">⏳ Falta escanear para verificar ('+t.codigos.join(', ')+')</span>';
+      else{vf.ok.forEach(c=>h+='<span class="chip c-g">✔ '+c+' no volvió</span>');vf.volvieron.forEach(c=>h+='<span class="chip c-r">✖ '+c+' volvió</span>');}
+      h+='</div>';
+      if(!vf.pend)h+='<div class="meta" style="margin-top:4px">Según el escaneo del '+fmt(vf.esc.fecha)+'</div>';
+    }
+    if(t.notas)h+='<div class="meta" style="margin-top:4px">📝 '+esc(t.notas)+'</div>';
+    h+='<div class="acts"><button class="btn bs sm" data-act="trab-form" data-id="'+a.id+'" data-tid="'+t.id+'">✏️ Editar</button><button class="btn bd sm" data-act="trab-del" data-id="'+a.id+'" data-tid="'+t.id+'">Eliminar</button></div></div>';
+  });
+  const tot=list.reduce((s,t)=>s+(t.costo||0),0);
+  if(tot)h+='<div class="meta" style="text-align:right;font-weight:700">Total invertido: '+plata(tot)+'</div>';
+  return h;
+}
+
+/* ───────── Formularios ───────── */
+function modal(titulo,form,body){$('#modal').innerHTML='<div class="mo" data-act="mo"><div class="mbox"><div class="mh"><h3>'+titulo+'</h3><button class="ibtn" data-act="cerrar" aria-label="Cerrar">✕</button></div><form data-form="'+form+'">'+body+'</form></div></div>';}
+const cerrar=()=>{$('#modal').innerHTML='';};
+const inp=(n,l,val,x)=>'<div class="fg"><label class="fl">'+l+'</label><input class="fi" name="'+n+'" value="'+esc(val??'')+'" '+(x||'')+'></div>';
+const hid=(n,val)=>'<input type="hidden" name="'+n+'" value="'+esc(val??'')+'">';
+const txta=(n,l,val,cls,ph)=>'<div class="fg"><label class="fl">'+l+'</label><textarea class="fi '+(cls||'')+'" name="'+n+'" placeholder="'+(ph||'')+'">'+esc(val??'')+'</textarea></div>';
+const okBtn=t=>'<button class="btn bp full" type="submit">'+(t||'Guardar')+'</button>';
+
+function fAuto(id){
+  const a=id?autoById(id):{};
+  modal(id?'✏️ Editar auto':'🚗 Nuevo auto','auto',hid('id',id)+inp('nombre','Nombre *',a.nombre,'required placeholder="Ej: Corsa, la camioneta"')+
+    '<div class="frow">'+inp('patente','Patente',a.patente,'placeholder="AA123BB" style="text-transform:uppercase"')+inp('anio','Año',a.anio,'type="number" inputmode="numeric"')+'</div>'+
+    '<div class="frow">'+inp('marca','Marca',a.marca)+inp('modelo','Modelo',a.modelo)+'</div>'+
+    inp('km','Km actual',a.km,'type="number" inputmode="numeric"')+okBtn()+
+    (id?'<button class="btn bd full" type="button" data-act="auto-del" data-id="'+id+'">🗑 Eliminar auto</button>':''));
+}
+function fKm(id){const a=autoById(id);modal('Km · '+esc(a.nombre),'km',hid('id',id)+inp('km','Km actuales',a.km,'type="number" inputmode="numeric" required autofocus')+okBtn());}
+function fVenc(id,k,renov){
+  const a=autoById(id),t=VTIPOS.find(x=>x.k===k),v=(a.venc||{})[k]||{};
+  const sug=renov&&v.fecha?(t.renov?sumarMeses(v.fecha,t.renov):''):v.fecha;
+  modal(t.ico+' '+t.n+' · '+esc(a.nombre),'venc',hid('id',id)+hid('k',k)+
+    inp('fecha','Fecha de vencimiento *',sug,'type="date" required')+
+    (renov?'<div class="hint" style="margin:-6px 0 12px">'+(t.renov?'Te propongo +'+t.renov+' meses; cambiala si no es así.':'Cargá la nueva fecha de vencimiento.')+'</div>':'')+
+    t.extra.map(([ek,n])=>inp(ek,n,v[ek])).join('')+txta('notas','Notas',v.notas,'txt')+okBtn());
+}
+function fEsc(id,sid){
+  const a=autoById(id),s=sid?(a.escaneos||[]).find(x=>x.id===sid):{fecha:hoy(),km:a.km,herr:'Escáner propio (OBD2)',codigos:[]};
+  const herrs=['Escáner propio (OBD2)','Taller','Concesionaria','Otro'];
+  modal(sid?'✏️ Editar escaneo':'🩺 Nuevo escaneo','esc',hid('id',id)+hid('sid',sid)+
+    '<div class="frow">'+inp('fecha','Fecha *',s.fecha,'type="date" required')+inp('km','Km',s.km,'type="number" inputmode="numeric"')+'</div>'+
+    '<div class="fg"><label class="fl">Hecho con</label><select class="fi" name="herr">'+herrs.map(x=>'<option'+(x===s.herr?' selected':'')+'>'+x+'</option>').join('')+'</select></div>'+
+    txta('codigos','Códigos de falla',s.codigos.join(' '),'','Ej: P0301 P0420 — o pegá acá la respuesta completa de Gemini')+
+    '<div class="hint">Escribilos sueltos o pegá el texto que te dio Gemini (u otra IA) al analizar la foto del escáner: la app busca los códigos ahí adentro y ignora el resto. Si no dio ningún código, dejalo vacío.</div><div id="prev"></div>'+
+    '<hr class="fdiv">'+
+    txta('medidas','Otras mediciones (consumo, sondas de oxígeno, temperaturas, presión…)',medidasTxt(s.medidas),'txt','RPM en ralentí: 850 rpm\nConsumo instantáneo: 7,2 l/100km\nSensor O2 banco 1: 0,45 V')+
+    '<div class="hint">Una por línea, formato <b>Nombre: valor</b>. Usá siempre los mismos nombres para que se puedan comparar con el escaneo anterior. <button type="button" class="btn bs sm" style="margin-top:6px" data-act="copiar-prompt">📋 Copiar instrucciones para pedirle a Gemini</button></div><div id="prevM"></div>'+
+    txta('notas','Notas',s.notas,'txt','Ej: check engine prendido, tironea en frío…')+okBtn());
+  prevCods();prevMedidas();
+}
+const PROMPT_GEMINI='Analizá esta imagen de la pantalla del escáner del auto y respondé SOLO con la lista de datos que se ven, uno por línea, en este formato exacto, sin texto adicional ni explicaciones:\n\nNombre del dato: valor con unidad\n\nSi el escáner ya muestra la sigla en pantalla (por ejemplo RPM(/min), MAP(kPa), O2B1S1(V)), transcribila tal cual aparece, no hace falta traducirla ni explicarla. Ejemplo:\nRPM(/min): 850\nMAP(kPa): 30\nO2B1S1(V): 0.450\n\nSi hay códigos de falla (formato P0301, B0012, etc.), listalos aparte al principio, uno por línea. Usá siempre las mismas siglas o nombres en cada foto que me mande, así se pueden comparar con escaneos anteriores.';
+function prevMedidas(){
+  const f=document.querySelector('form[data-form="esc"]'),el=$('#prevM');if(!f||!el)return;
+  const list=parseMedidas(f.medidas.value);
+  el.className=list.length?'prev':'';
+  el.innerHTML=list.map(m=>{const desc=descMedida(m.n);return '<div class="code"><b style="font-family:inherit;font-size:13px;min-width:0;flex:0 0 42%">'+esc(m.n)+(desc?'<br><span class="meta" style="font-weight:400;font-size:11px">'+esc(desc)+'</span>':'')+'</b><span class="d">'+esc(m.v)+'</span></div>';}).join('');
+}
+function prevCods(){
+  const f=document.querySelector('form[data-form="esc"]');if(!f)return;
+  const a=autoById(f.id.value),{ok}=parseCods(f.codigos.value);
+  const ord=escOrd(a).filter(x=>x.id!==f.sid.value&&(x.fecha<f.fecha.value||(x.fecha===f.fecha.value&&!f.sid.value)));
+  const prev=ord[ord.length-1],pc=prev?prev.codigos:[];
+  let h='';
+  if(ok.length){
+    h+=ok.map(c=>{const n=prev&&!pc.includes(c);return '<div class="code"><b>'+c+'</b><span class="d">'+esc(descCod(c))+'</span><span class="chip '+(!prev?'c-o':n?'c-r':'c-o')+'" style="font-size:11px">'+(!prev?'activo':n?'NUEVO':'sigue')+'</span></div>';}).join('');
+  }
+  const res=pc.filter(c=>!ok.includes(c));
+  if(prev&&res.length)h+='<div class="al-s" style="color:var(--green);font-weight:700;margin-top:4px">✔ Se borraron desde el '+fmt(prev.fecha)+': '+res.join(', ')+'</div>';
+  const el=$('#prev');if(el){el.className=h?'prev':'';el.innerHTML=h;}
+}
+function fTrab(id,tid){
+  const a=autoById(id),t=tid?(a.trabajos||[]).find(x=>x.id===tid):{fecha:hoy(),km:a.km,codigos:[]};
+  const ord=escOrd(a),ult=ord[ord.length-1];
+  const opc=[...new Set([...(ult?ult.codigos:[]),...(t.codigos||[])])];
+  modal(tid?'✏️ Editar trabajo':'🔧 Nuevo trabajo','trab',hid('id',id)+hid('tid',tid)+
+    inp('desc','¿Qué se hizo? *',t.desc,'required placeholder="Ej: cambio de bujías y bobina"')+
+    '<div class="frow">'+inp('fecha','Fecha *',t.fecha,'type="date" required')+inp('km','Km',t.km,'type="number" inputmode="numeric"')+'</div>'+
+    '<div class="frow">'+inp('taller','Taller',t.taller)+inp('costo','Costo ($)',t.costo,'type="number" inputmode="decimal"')+'</div>'+
+    '<div class="fg"><label class="fl">¿Busca borrar algún código?</label>'+
+    (opc.length?opc.map(c=>'<label class="chk"><input type="checkbox" name="cod" value="'+c+'"'+((t.codigos||[]).includes(c)?' checked':'')+'> <b style="font-family:monospace">'+c+'</b> <span class="meta">'+esc(descCod(c))+'</span></label>').join(''):'<div class="hint">El último escaneo no tiene códigos activos.</div>')+
+    '<input class="fi" name="codextra" placeholder="Otro código, o pegá texto de Gemini (opcional)" style="margin-top:6px"></div>'+
+    txta('notas','Notas',t.notas,'txt')+okBtn());
+}
+function fMant(id,k){
+  const a=autoById(id),t=MTIPOS.find(x=>x.k===k),m=(a.mant||{})[k]||{};
+  modal(t.ico+' '+t.n+' · '+esc(a.nombre),'mant',hid('id',id)+hid('k',k)+
+    '<div class="frow">'+inp('fecha','Fecha del último cambio',m.fecha,'type="date"')+inp('km','Km en ese momento',m.km!=null?m.km:a.km,'type="number" inputmode="numeric"')+'</div>'+
+    '<div class="frow">'+inp('kmInt','Cada cuántos km avisar (0 = no avisar por km)',m.kmInt!=null?m.kmInt:t.kmInt,'type="number" inputmode="numeric"')+inp('mesInt','Cada cuántos meses avisar (0 = no avisar por tiempo)',m.mesInt!=null?m.mesInt:t.mesInt,'type="number" inputmode="numeric"')+'</div>'+
+    txta('notas','Notas',m.notas,'txt','Ej: aceite 10W40, taller de siempre…')+okBtn());
+}
+function fAjustes(){
+  const perm=('Notification' in window)?Notification.permission:'no';
+  modal('⚙️ Ajustes y backup','ajustes',
+    inp('aviso','Avisar con cuántos días de anticipación',D.ajustes.aviso,'type="number" min="1" max="120" required')+okBtn('Guardar ajustes')+
+    '<div class="stitle" style="margin-top:18px">Notificaciones</div>'+
+    (perm==='granted'?'<div class="meta">✅ Activadas. Te llega un aviso el día que abrís la app si algo vence en 7 días o menos, o si aparecen códigos nuevos.</div>':
+     perm==='no'?'<div class="meta">Este navegador no soporta notificaciones.</div>':
+     '<button class="btn bs full" type="button" data-act="notif">🔔 Activar notificaciones</button>')+
+    '<div class="note">Para avisos 100% seguros aunque no abras la app, usá <b>📅 Al calendario</b> en cada vencimiento: queda en tu calendario con recordatorios 30, 7 y 1 día antes.</div>'+
+    '<div class="stitle" style="margin-top:18px">Backup</div>'+
+    '<div class="meta">Los datos quedan guardados en este teléfono. Exportá un backup de vez en cuando (por ejemplo a Drive).</div>'+
+    '<button class="btn bs full" type="button" data-act="exportar">📤 Exportar backup</button>'+
+    '<button class="btn bs full" type="button" data-act="importar">📥 Importar backup</button>'+
+    '<input type="file" id="fimp" accept=".json,application/json" hidden>');
+}
+
+/* ───────── Guardado de formularios ───────── */
+const FORMS={
+  auto(f){
+    const d={nombre:f.nombre.trim(),patente:f.patente.trim().toUpperCase(),anio:f.anio.trim(),marca:f.marca.trim(),modelo:f.modelo.trim(),km:num(f.km)};
+    if(f.id)Object.assign(autoById(f.id),d);
+    else{const a={id:uid(),...d,venc:{},escaneos:[],trabajos:[],mant:{}};D.autos.push(a);V.auto=a.id;V.tab='venc';}
+    return 'Auto guardado';
+  },
+  km(f){autoById(f.id).km=num(f.km);return 'Km actualizado';},
+  venc(f){
+    const a=autoById(f.id),t=VTIPOS.find(x=>x.k===f.k);a.venc=a.venc||{};
+    const old=a.venc[f.k]||{},hist=(old.hist||[]).slice();
+    if(old.fecha&&old.fecha!==f.fecha&&!hist.includes(old.fecha))hist.push(old.fecha);
+    const v={fecha:f.fecha,notas:f.notas.trim(),hist};t.extra.forEach(([k])=>v[k]=(f[k]||'').trim());
+    a.venc[f.k]=v;return t.n+' guardado';
+  },
+  esc(f){
+    const a=autoById(f.id),{ok}=parseCods(f.codigos);
+    a.escaneos=a.escaneos||[];
+    const d={fecha:f.fecha,km:num(f.km),herr:f.herr,codigos:ok,medidas:parseMedidas(f.medidas),notas:f.notas.trim()};
+    if(f.sid)Object.assign(a.escaneos.find(x=>x.id===f.sid),d);
+    else a.escaneos.push({id:uid(),creado:Date.now(),...d});
+    if(d.km!=null&&(a.km==null||d.km>a.km))a.km=d.km;
+    V.tab='esc';return 'Escaneo guardado';
+  },
+  trab(f,form){
+    const a=autoById(f.id);a.trabajos=a.trabajos||[];
+    const cods=[...new Set([...[...form.querySelectorAll('input[name=cod]:checked')].map(x=>x.value),...parseCods(f.codextra).ok])];
+    const d={desc:f.desc.trim(),fecha:f.fecha,km:num(f.km),taller:f.taller.trim(),costo:num(f.costo),codigos:cods,notas:f.notas.trim()};
+    if(f.tid)Object.assign(a.trabajos.find(x=>x.id===f.tid),d);
+    else a.trabajos.push({id:uid(),creado:Date.now(),...d});
+    if(d.km!=null&&(a.km==null||d.km>a.km))a.km=d.km;
+    V.tab='trab';return 'Trabajo guardado';
+  },
+  ajustes(f){D.ajustes.aviso=Math.max(1,num(f.aviso)||30);return 'Ajustes guardados';},
+  mant(f){
+    const a=autoById(f.id),t=MTIPOS.find(x=>x.k===f.k);a.mant=a.mant||{};
+    const old=a.mant[f.k]||{},hist=(old.hist||[]).slice();
+    if(old.fecha&&old.fecha!==f.fecha&&!hist.some(h=>h.fecha===old.fecha))hist.push({fecha:old.fecha,km:old.km});
+    a.mant[f.k]={fecha:f.fecha||null,km:num(f.km),kmInt:num(f.kmInt)??t.kmInt,mesInt:num(f.mesInt)??t.mesInt,notas:f.notas.trim(),hist};
+    if(num(f.km)!=null&&(a.km==null||num(f.km)>a.km))a.km=num(f.km);
+    V.tab='mant';return t.n+' guardado';
+  },
+};
+
+/* ───────── Calendario (.ics) ───────── */
+function icsGenerar(a,claveArch,uidClave,fechaISO,titulo){
+  const d=fechaISO.replace(/-/g,''),n=iso(new Date(parseF(fechaISO).getTime()+864e5)).replace(/-/g,'');
+  const now=new Date().toISOString().replace(/[-:]/g,'').slice(0,15)+'Z';
+  const tit=titulo.replace(/[,;\\]/g,' ');
+  const alarm=p=>'BEGIN:VALARM\r\nTRIGGER:-P'+p+'\r\nACTION:DISPLAY\r\nDESCRIPTION:'+tit+'\r\nEND:VALARM\r\n';
+  const ics='BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//MisAutos//ES\r\nBEGIN:VEVENT\r\nUID:'+a.id+'-'+uidClave+'-'+d+'@misautos\r\nDTSTAMP:'+now+'\r\nDTSTART;VALUE=DATE:'+d+'\r\nDTEND;VALUE=DATE:'+n+'\r\nSUMMARY:'+tit+'\r\n'+alarm('30D')+alarm('7D')+alarm('1D')+'END:VEVENT\r\nEND:VCALENDAR\r\n';
+  descargar(new Blob([ics],{type:'text/calendar'}),claveArch+'_'+(a.patente||a.nombre).replace(/\W+/g,'_')+'.ics');
+  toast('Abrí el archivo para agregarlo al calendario',3200);
+}
+function calendario(id,k){
+  const a=autoById(id),t=VTIPOS.find(x=>x.k===k),v=a.venc[k];
+  icsGenerar(a,t.k,k,v.fecha,'Vence '+t.n+' - '+nombreAuto(a));
+}
+function calendarioMant(id,k){
+  const a=autoById(id),t=MTIPOS.find(x=>x.k===k),m=(a.mant||{})[k];
+  if(!t.mesInt||!m||!m.fecha)return;
+  icsGenerar(a,'mant_'+t.k,'mant-'+k,sumarMeses(m.fecha,t.mesInt),t.n+' (estimado) - '+nombreAuto(a));
+}
+function descargar(blob,nombre){const u=URL.createObjectURL(blob),l=document.createElement('a');l.href=u;l.download=nombre;document.body.appendChild(l);l.click();l.remove();setTimeout(()=>URL.revokeObjectURL(u),4000);}
+function copiar(txt){
+  (navigator.clipboard&&navigator.clipboard.writeText?navigator.clipboard.writeText(txt):Promise.reject())
+    .then(()=>toast('✓ Copiado. Pegalo en Gemini junto con la foto',3200))
+    .catch(()=>{
+      const ta=document.createElement('textarea');ta.value=txt;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();
+      try{document.execCommand('copy');toast('✓ Copiado. Pegalo en Gemini junto con la foto',3200);}catch(e){toast('⚠️ No se pudo copiar. Mantené presionado el botón para seleccionarlo',3500);}
+      ta.remove();
+    });
+}
+
+/* ───────── Notificaciones ───────── */
+async function notificar(){
+  try{
+    if(!('Notification' in window)||Notification.permission!=='granted'||!('serviceWorker' in navigator))return;
+    if(D.ultNotif===hoy())return;
+    const urg=alertas().filter(x=>x.nivel>=3);if(!urg.length)return;
+    const reg=await navigator.serviceWorker.ready;
+    await reg.showNotification('Mis Autos · '+urg.length+' aviso(s)',{body:urg.slice(0,4).map(x=>x.a.nombre+': '+x.t.replace(/^\S+\s/,'')).join('\n'),icon:'icon.svg',tag:'misautos'});
+    D.ultNotif=hoy();save();
+  }catch(e){console.warn(e);}
+}
+
+/* ───────── Eventos ───────── */
+document.addEventListener('click',e=>{
+  const el=e.target.closest('[data-act]');if(!el)return;
+  const{act,id}=el.dataset;
+  if(act==='mo'){if(e.target===el)cerrar();return;}
+  switch(act){
+    case 'abrir':V.auto=id;V.tab=el.dataset.tab||'venc';render();scrollTo(0,0);break;
+    case 'volver':V.auto=null;render();break;
+    case 'tab':V.tab=el.dataset.tab;render();break;
+    case 'cerrar':cerrar();break;
+    case 'auto-form':fAuto(id);break;
+    case 'km-form':fKm(id);break;
+    case 'venc-form':fVenc(id,el.dataset.k,!!el.dataset.renov);break;
+    case 'esc-form':fEsc(id,el.dataset.sid);break;
+    case 'trab-form':fTrab(id,el.dataset.tid);break;
+    case 'mant-form':fMant(id,el.dataset.k);break;
+    case 'mant-hecho':{
+      const a=autoById(id),t=MTIPOS.find(x=>x.k===el.dataset.k),old=(a.mant||{})[el.dataset.k]||{};
+      a.mant=a.mant||{};const hist=(old.hist||[]).slice();
+      if(old.fecha&&!hist.some(h=>h.fecha===old.fecha))hist.push({fecha:old.fecha,km:old.km});
+      a.mant[el.dataset.k]={fecha:hoy(),km:a.km,kmInt:old.kmInt!=null?old.kmInt:t.kmInt,mesInt:old.mesInt!=null?old.mesInt:t.mesInt,notas:old.notas||'',hist};
+      save();render();toast('✓ '+t.n+' registrado hoy'+(a.km!=null?' a '+kmf(a.km):''));break;
+    }
+    case 'cal':calendario(id,el.dataset.k);break;
+    case 'cal-mant':calendarioMant(id,el.dataset.k);break;
+    case 'ajustes':fAjustes();break;
+    case 'auto-del':{const a=autoById(id);if(confirm('¿Eliminar '+a.nombre+' con todo su historial?')){D.autos=D.autos.filter(x=>x.id!==id);V.auto=null;save();cerrar();render();}break;}
+    case 'esc-del':if(confirm('¿Eliminar este escaneo?')){const a=autoById(id);a.escaneos=a.escaneos.filter(x=>x.id!==el.dataset.sid);save();render();}break;
+    case 'trab-del':if(confirm('¿Eliminar este trabajo?')){const a=autoById(id);a.trabajos=a.trabajos.filter(x=>x.id!==el.dataset.tid);save();render();}break;
+    case 'notif':Notification.requestPermission().then(p=>{toast(p==='granted'?'🔔 Notificaciones activadas':'No se activaron');if(p==='granted'){D.ultNotif='';notificar();}fAjustes();});break;
+    case 'copiar-prompt':copiar(PROMPT_GEMINI);break;
+    case 'exportar':descargar(new Blob([JSON.stringify(D,null,2)],{type:'application/json'}),'MisAutos_backup_'+hoy()+'.json');toast('Backup exportado');break;
+    case 'importar':$('#fimp').click();break;
+  }
+});
+document.addEventListener('submit',e=>{
+  const form=e.target.closest('form[data-form]');if(!form)return;e.preventDefault();
+  const msg=FORMS[form.dataset.form](Object.fromEntries(new FormData(form)),form);
+  if(msg===false)return;
+  save();cerrar();render();toast('✓ '+msg);
+});
+document.addEventListener('input',e=>{if(e.target.closest('form[data-form="esc"]')){prevCods();prevMedidas();}});
+document.addEventListener('change',e=>{
+  if(e.target.id!=='fimp')return;const file=e.target.files[0];if(!file)return;
+  file.text().then(t=>{const p=JSON.parse(t);if(!Array.isArray(p.autos))throw new Error('no es un backup de Mis Autos');
+    if(!confirm('Esto reemplaza los datos actuales por los del backup ('+p.autos.length+' auto/s). ¿Seguir?'))return;
+    D={...D,...p};save();cerrar();V.auto=null;render();toast('✓ Backup importado');
+  }).catch(err=>alert('No se pudo importar: '+err.message));
+});
+
+/* ───────── Inicio ───────── */
+load();render();
+if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js').then(notificar).catch(()=>{});
+if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){render();notificar();}});
+</script>
+</body>
+</html>
