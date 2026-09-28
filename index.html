@@ -168,6 +168,29 @@ function comparar(a,s){
     resueltos:pc.filter(c=>!s.codigos.includes(c))};
 }
 function escDespues(a,t){return escOrd(a).find(s=>s.fecha>t.fecha||(s.fecha===t.fecha&&s.creado>t.creado));}
+/* ── Mediciones libres (consumo, sondas de oxígeno, temperaturas, presión, etc.) ── */
+const normN=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').trim().replace(/\s+/g,' ');
+function parseMedidas(txt){
+  const out=[];
+  String(txt||'').split(/\r?\n/).forEach(l=>{
+    l=l.replace(/^[-•*]\s*/,'').trim();if(!l)return;
+    const m=l.match(/^([^:]{2,64}):\s*(.+)$/);
+    if(m&&m[1].trim()&&m[2].trim())out.push({n:m[1].trim(),v:m[2].trim()});
+  });
+  if(!out.length&&String(txt||'').trim())out.push({n:'Notas del escaneo',v:txt.trim()});
+  return out;
+}
+function medidasTxt(list){return (list||[]).map(m=>m.n+': '+m.v).join('\n');}
+function medidaCmp(prevList,n,v){
+  if(!prevList)return null;
+  const match=prevList.find(x=>normN(x.n)===normN(n));
+  if(!match)return{e:'nuevo'};
+  if(String(match.v).trim()===String(v).trim())return{e:'igual',prev:match.v};
+  const nn=parseFloat(String(v).replace(',','.')),np=parseFloat(String(match.v).replace(',','.'));
+  if(!isNaN(nn)&&!isNaN(np))return{e:nn>np?'subio':'bajo',prev:match.v};
+  return{e:'cambio',prev:match.v};
+}
+const MCMP={igual:['c-g','= igual que antes'],nuevo:['c-b','nuevo dato'],subio:['c-o','↑ antes: '],bajo:['c-o','↓ antes: '],cambio:['c-o','antes: ']};
 function verificar(a,t){
   if(!t.codigos||!t.codigos.length)return null;
   const s=escDespues(a,t);
@@ -281,6 +304,14 @@ function vEscaneos(a){
       h+=vCodigos(cmp.resueltos,'c-g','se borró');
       h+='</div>';
     }
+    if(s.medidas&&s.medidas.length){
+      h+='<div style="margin-top:8px">';
+      s.medidas.forEach(m=>{
+        const c=medidaCmp(cmp.prev?cmp.prev.medidas:null,m.n,m.v),tag=c?MCMP[c.e]:null;
+        h+='<div class="code"><b style="font-family:inherit;font-size:13px;min-width:0;flex:0 0 42%">'+esc(m.n)+'</b><span class="d">'+esc(m.v)+(tag?' <span class="chip '+tag[0]+'" style="font-size:11px">'+tag[1]+(c.prev!=null&&c.e!=='igual'&&c.e!=='nuevo'?esc(c.prev):'')+'</span>':'')+'</span></div>';
+      });
+      h+='</div>';
+    }
     if(s.notas)h+='<div class="meta" style="margin-top:6px">📝 '+esc(s.notas)+'</div>';
     h+='<div class="acts"><button class="btn bs sm" data-act="esc-form" data-id="'+a.id+'" data-sid="'+s.id+'">✏️ Editar</button><button class="btn bd sm" data-act="esc-del" data-id="'+a.id+'" data-sid="'+s.id+'">Eliminar</button></div></div>';
   });
@@ -342,8 +373,18 @@ function fEsc(id,sid){
     '<div class="fg"><label class="fl">Hecho con</label><select class="fi" name="herr">'+herrs.map(x=>'<option'+(x===s.herr?' selected':'')+'>'+x+'</option>').join('')+'</select></div>'+
     txta('codigos','Códigos de falla',s.codigos.join(' '),'','Ej: P0301 P0420 — o pegá acá la respuesta completa de Gemini')+
     '<div class="hint">Escribilos sueltos o pegá el texto que te dio Gemini (u otra IA) al analizar la foto del escáner: la app busca los códigos ahí adentro y ignora el resto. Si no dio ningún código, dejalo vacío.</div><div id="prev"></div>'+
+    '<hr class="fdiv">'+
+    txta('medidas','Otras mediciones (consumo, sondas de oxígeno, temperaturas, presión…)',medidasTxt(s.medidas),'txt','RPM en ralentí: 850 rpm\nConsumo instantáneo: 7,2 l/100km\nSensor O2 banco 1: 0,45 V')+
+    '<div class="hint">Una por línea, formato <b>Nombre: valor</b>. Usá siempre los mismos nombres para que se puedan comparar con el escaneo anterior. <button type="button" class="btn bs sm" style="margin-top:6px" data-act="copiar-prompt">📋 Copiar instrucciones para pedirle a Gemini</button></div><div id="prevM"></div>'+
     txta('notas','Notas',s.notas,'txt','Ej: check engine prendido, tironea en frío…')+okBtn());
-  prevCods();
+  prevCods();prevMedidas();
+}
+const PROMPT_GEMINI='Analizá esta imagen de la pantalla del escáner del auto y respondé SOLO con la lista de datos que se ven, uno por línea, en este formato exacto, sin texto adicional ni explicaciones:\n\nNombre del dato: valor con unidad\n\nPor ejemplo:\nRPM en ralentí: 850 rpm\nConsumo instantáneo: 7,2 l/100km\nSensor de oxígeno banco 1 sensor 1: 0,45 V\nTemperatura del refrigerante: 92 °C\n\nSi hay códigos de falla (formato P0301, B0012, etc.), listalos aparte al principio, uno por línea. Usá siempre los mismos nombres para cada dato en cada foto que te mande, así se pueden comparar con escaneos anteriores.';
+function prevMedidas(){
+  const f=document.querySelector('form[data-form="esc"]'),el=$('#prevM');if(!f||!el)return;
+  const list=parseMedidas(f.medidas.value);
+  el.className=list.length?'prev':'';
+  el.innerHTML=list.map(m=>'<div class="code"><b style="font-family:inherit;font-size:13px;min-width:0;flex:0 0 42%">'+esc(m.n)+'</b><span class="d">'+esc(m.v)+'</span></div>').join('');
 }
 function prevCods(){
   const f=document.querySelector('form[data-form="esc"]');if(!f)return;
@@ -406,7 +447,7 @@ const FORMS={
   esc(f){
     const a=autoById(f.id),{ok}=parseCods(f.codigos);
     a.escaneos=a.escaneos||[];
-    const d={fecha:f.fecha,km:num(f.km),herr:f.herr,codigos:ok,notas:f.notas.trim()};
+    const d={fecha:f.fecha,km:num(f.km),herr:f.herr,codigos:ok,medidas:parseMedidas(f.medidas),notas:f.notas.trim()};
     if(f.sid)Object.assign(a.escaneos.find(x=>x.id===f.sid),d);
     else a.escaneos.push({id:uid(),creado:Date.now(),...d});
     if(d.km!=null&&(a.km==null||d.km>a.km))a.km=d.km;
@@ -436,6 +477,15 @@ function calendario(id,k){
   toast('Abrí el archivo para agregarlo al calendario',3200);
 }
 function descargar(blob,nombre){const u=URL.createObjectURL(blob),l=document.createElement('a');l.href=u;l.download=nombre;document.body.appendChild(l);l.click();l.remove();setTimeout(()=>URL.revokeObjectURL(u),4000);}
+function copiar(txt){
+  (navigator.clipboard&&navigator.clipboard.writeText?navigator.clipboard.writeText(txt):Promise.reject())
+    .then(()=>toast('✓ Copiado. Pegalo en Gemini junto con la foto',3200))
+    .catch(()=>{
+      const ta=document.createElement('textarea');ta.value=txt;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();
+      try{document.execCommand('copy');toast('✓ Copiado. Pegalo en Gemini junto con la foto',3200);}catch(e){toast('⚠️ No se pudo copiar. Mantené presionado el botón para seleccionarlo',3500);}
+      ta.remove();
+    });
+}
 
 /* ───────── Notificaciones ───────── */
 async function notificar(){
@@ -470,6 +520,7 @@ document.addEventListener('click',e=>{
     case 'esc-del':if(confirm('¿Eliminar este escaneo?')){const a=autoById(id);a.escaneos=a.escaneos.filter(x=>x.id!==el.dataset.sid);save();render();}break;
     case 'trab-del':if(confirm('¿Eliminar este trabajo?')){const a=autoById(id);a.trabajos=a.trabajos.filter(x=>x.id!==el.dataset.tid);save();render();}break;
     case 'notif':Notification.requestPermission().then(p=>{toast(p==='granted'?'🔔 Notificaciones activadas':'No se activaron');if(p==='granted'){D.ultNotif='';notificar();}fAjustes();});break;
+    case 'copiar-prompt':copiar(PROMPT_GEMINI);break;
     case 'exportar':descargar(new Blob([JSON.stringify(D,null,2)],{type:'application/json'}),'MisAutos_backup_'+hoy()+'.json');toast('Backup exportado');break;
     case 'importar':$('#fimp').click();break;
   }
@@ -480,7 +531,7 @@ document.addEventListener('submit',e=>{
   if(msg===false)return;
   save();cerrar();render();toast('✓ '+msg);
 });
-document.addEventListener('input',e=>{if(e.target.closest('form[data-form="esc"]'))prevCods();});
+document.addEventListener('input',e=>{if(e.target.closest('form[data-form="esc"]')){prevCods();prevMedidas();}});
 document.addEventListener('change',e=>{
   if(e.target.id!=='fimp')return;const file=e.target.files[0];if(!file)return;
   file.text().then(t=>{const p=JSON.parse(t);if(!Array.isArray(p.autos))throw new Error('no es un backup de Mis Autos');
