@@ -157,6 +157,7 @@ const VTIPOS=[
   {k:'pruebaHidraulica',n:'Prueba hidráulica (GNC)',ico:'🧪',extra:[['planta','Planta / taller']],renov:60,avisoDef:30},
 ];
 const avisoDe=(v,t)=>v&&v.aviso!=null?v.aviso:(t.avisoDef!=null?t.avisoDef:D.ajustes.aviso);
+const renovDe=(v,t)=>v&&v.renov!=null?v.renov:(t.renov||0);
 // Mantenimiento: se vence por km recorridos desde el último cambio, por tiempo desde la fecha,
 // o por lo que ocurra primero. kmInt/mesInt en 0 desactiva ese criterio (ej: batería, sin km fijo).
 const MTIPOS=[
@@ -438,10 +439,10 @@ function vAuto(a){
 function vVenc(a){
   let h='';
   VTIPOS.forEach(t=>{
-    const v=(a.venc||{})[t.k]||{},av=avisoDe(v,t),e=estadoV(v,av);
+    const v=(a.venc||{})[t.k]||{},av=avisoDe(v,t),rn=renovDe(v,t),e=estadoV(v,av);
     h+='<div class="card"><div class="row"><div class="ttl">'+t.ico+' '+t.n+'</div><span class="chip c-'+e.c+'">'+esc(e.txt)+'</span></div>';
     h+='<div style="font-size:20px;font-weight:800;margin-top:6px">'+(v.fecha?'Vence '+fmt(v.fecha):'<span class="meta">Sin fecha cargada</span>')+'</div>';
-    if(v.fecha)h+='<div class="meta">Avisa '+av+' día(s) antes</div>';
+    if(v.fecha)h+='<div class="meta">Avisa '+av+' día(s) antes'+(rn?' · se renueva cada '+rn+' meses':'')+'</div>';
     t.extra.forEach(([k,n])=>{if(v[k])h+='<div class="meta">'+n+': '+esc(v[k])+'</div>';});
     if(v.notas)h+='<div class="meta">📝 '+esc(v.notas)+'</div>';
     if(v.hist&&v.hist.length)h+='<div class="meta">Vencimientos anteriores: '+v.hist.slice(-3).map(fmt).join(', ')+'</div>';
@@ -574,17 +575,19 @@ function fAuto(id){
 function fKm(id){const a=autoById(id);modal('Km · '+esc(a.nombre),'km',hid('id',id)+inp('km','Km actuales',a.km,'type="number" inputmode="numeric" required autofocus')+okBtn());}
 function fVenc(id,k,renov){
   const a=autoById(id),t=VTIPOS.find(x=>x.k===k),v=(a.venc||{})[k]||{};
-  const sug=renov&&v.fecha?(t.renov?sumarMeses(v.fecha,t.renov):''):v.fecha;
+  const rn=renovDe(v,t);
+  const sug=renov&&v.fecha?(rn?sumarMeses(v.fecha,rn):''):v.fecha;
   const av=avisoDe(v,t);
   const forzarArchivo=!!(renov&&v.archivo); // al renovar, si ya tenía un adjunto, pedimos el nuevo (ej: PDF de la póliza cada 2 meses)
   modal(t.ico+' '+t.n+' · '+esc(a.nombre),'venc',hid('id',id)+hid('k',k)+
     inp('fecha','Fecha de vencimiento *',sug,'type="date" required')+
-    (renov?'<div class="hint" style="margin:-6px 0 12px">'+(t.renov?'Te propongo +'+t.renov+' meses; cambiala si no es así.':'Cargá la nueva fecha de vencimiento.')+'</div>':'')+
+    (renov?'<div class="hint" style="margin:-6px 0 12px">'+(rn?'Te propongo +'+rn+' meses; cambiala si no es así.':'Cargá la nueva fecha de vencimiento.')+'</div>':'')+
+    inp('renov','Cada cuántos meses se renueva (0 = no proponer fecha sola)',rn,'type="number" min="0" max="120"')+
     inp('aviso','Avisar con cuántos días de anticipación',av,'type="number" min="1" max="365" required')+
     t.extra.map(([ek,n])=>inp(ek,n,v[ek])).join('')+
     '<hr class="fdiv">'+
     (v.archivo?'<div class="hint">Adjunto actual: '+esc(v.archivo.nombre)+' <button type="button" class="btn bs sm" data-act="ver-archivo" data-id="'+a.id+'" data-k="'+k+'" style="margin-left:6px">👁 Ver</button></div>'+(forzarArchivo?'':'<label class="chk"><input type="checkbox" name="quitarArchivo" value="1"> <span>Quitar el archivo adjunto</span></label>'):'')+
-    (forzarArchivo?'<div class="hint" style="color:var(--red);font-weight:700">📎 Subí el PDF o foto nuevo — se renueva cada '+(t.renov||'unos')+' meses, no sirve dejar el anterior.</div>':'')+
+    (forzarArchivo?'<div class="hint" style="color:var(--red);font-weight:700">📎 Subí el PDF o foto nuevo — se renueva cada '+(rn||'unos')+' meses, no sirve dejar el anterior.</div>':'')+
     '<div class="fg"><label class="fl">'+(v.archivo?'Reemplazar archivo (foto o PDF)':'Adjuntar archivo (foto o PDF, opcional)')+'</label><input class="fi" type="file" name="archivo" accept="image/*,application/pdf"'+(forzarArchivo?' required':'')+'></div>'+
     '<div class="hint">Se guarda en la nube: lo va a ver también quien más use la app.</div>'+
     txta('notas','Notas',v.notas,'txt')+okBtn());
@@ -690,7 +693,7 @@ const FORMS={
     const a=autoById(f.id),t=VTIPOS.find(x=>x.k===f.k);a.venc=a.venc||{};
     const old=a.venc[f.k]||{},hist=(old.hist||[]).slice();
     if(old.fecha&&old.fecha!==f.fecha&&!hist.includes(old.fecha))hist.push(old.fecha);
-    const v={fecha:f.fecha,aviso:num(f.aviso),notas:f.notas.trim(),hist,archivo:old.archivo||null};
+    const v={fecha:f.fecha,aviso:num(f.aviso),renov:num(f.renov),notas:f.notas.trim(),hist,archivo:old.archivo||null};
     t.extra.forEach(([k])=>v[k]=(f[k]||'').trim());
     if(f.quitarArchivo==='1'){if(old.archivo)await idbDel(old.archivo.id).catch(()=>{});v.archivo=null;}
     else if(f.archivo instanceof File&&f.archivo.size>0)v.archivo=await guardarArchivo(old.archivo,f.archivo);
